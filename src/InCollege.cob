@@ -53,6 +53,9 @@
            05 LOGIN-FOUND-FLAG    PIC A(1).
               88 LOGIN-SUCCESSFUL VALUE 'Y'.
 
+       01  MENU-EXIT-FLAG         PIC A(1).
+           88 EXIT-MENU           VALUE 'Y'.
+
        PROCEDURE DIVISION.
        MAIN-PROCEDURE.
            OPEN INPUT INPUT-FILE.
@@ -207,7 +210,61 @@
            CLOSE SECRETS-FILE.
 
        POST-LOGIN-NAVIGATION.
-           EXIT.
+           MOVE "N" TO MENU-EXIT-FLAG.
+           PERFORM UNTIL EXIT-MENU
+               MOVE "1) Search for a job" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2) Find someone you know" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "3) Learn a new skill" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "4) Log Out" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "Enter your choice:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               READ INPUT-FILE
+               MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
+
+               IF INPUT-CHOICE-BUF = "1" OR INPUT-CHOICE-BUF = "2"
+                   MOVE "Under construction." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+               IF INPUT-CHOICE-BUF = "3"
+                   PERFORM SKILLS-MENU-PROCEDURE
+               END-IF
+               IF INPUT-CHOICE-BUF = "4"
+                   SET EXIT-MENU TO TRUE
+               END-IF
+           END-PERFORM.
+
+       SKILLS-MENU-PROCEDURE.
+           MOVE "N" TO MENU-EXIT-FLAG.
+           PERFORM UNTIL EXIT-MENU
+               MOVE "1) Advanced COBOL" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2) JCL Management" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "3) Public Speaking" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "4) Data Analytics" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "5) UX/UI Design" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "6) Go Back" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "Enter your choice:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               READ INPUT-FILE
+               MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
+
+               IF INPUT-CHOICE-BUF >= "1" AND INPUT-CHOICE-BUF <= "5"
+                   MOVE "This skill is under construction." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+               IF INPUT-CHOICE-BUF = "6"
+                   SET EXIT-MENU TO TRUE
+               END-IF
+           END-PERFORM.
 
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY TO-OUTPUT-BUF.
