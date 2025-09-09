@@ -1,68 +1,216 @@
-IDENTIFICATION DIVISION.                 *> CRITICAL: Ensure this period is here.
-      *>****************************************************************
-      *> Program: InCollege.cob
-      *> Epic:    Epic #1: Log In, Part 1
-      *> Author:  Julio Chavez & Kalyan Castro De Oliveira
-      *> Date:    09-09-2025
-      *> Purpose: Foundational skeleton for the InCollege application.
-      *> Handles file definitions and dual output logic.
-      *>****************************************************************
+       IDENTIFICATION DIVISION.
        PROGRAM-ID. InCollege.
 
-       ENVIRONMENT DIVISION.                *> CRITICAL: Ensure this period is here.
-      *>****************************************************************
-      *> Defines files the program will use.
-      *>****************************************************************
+       ENVIRONMENT DIVISION.
        INPUT-OUTPUT SECTION.
        FILE-CONTROL.
-           SELECT InputFile ASSIGN TO "InCollege-Input.txt"
+           SELECT INPUT-FILE ASSIGN TO "input.txt"
+               ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT OUTPUT-FILE ASSIGN TO "output.txt"
+               ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT SECRETS-FILE ASSIGN TO "secrets.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
 
-           SELECT OutputFile ASSIGN TO "InCollege-Output.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
-
-           SELECT UserFile ASSIGN TO "users.dat"
-               ORGANIZATION IS LINE SEQUENTIAL.
-
-       DATA DIVISION.                       *> CRITICAL: Ensure this period is here.
-      *>****************************************************************
-      *> Defines file structures and variables.
-      *>****************************************************************
+       DATA DIVISION.
        FILE SECTION.
-       FD  InputFile.
-       01  InputRecord         PIC X(80).
+       FD  INPUT-FILE.
+       01  INPUT-RECORD           PIC X(80).
 
-       FD  OutputFile.
-       01  OutputRecord        PIC X(80).
+       FD  OUTPUT-FILE.
+       01  OUTPUT-RECORD          PIC X(80).
 
-       FD  UserFile.
-       01  UserRecord          PIC X(80).
+       FD  SECRETS-FILE.
+       01  SECRETS-RECORD.
+           05 SECRET-USERNAME     PIC X(20).
+           05 SECRET-PASSWORD     PIC X(12).
 
        WORKING-STORAGE SECTION.
-       01  WS-OUTPUT-LINE      PIC X(80).
+       01  TO-OUTPUT-BUF          PIC X(80).
+       01  INPUT-CHOICE-BUF       PIC X(1).
 
-       PROCEDURE DIVISION.                  *> CRITICAL: Ensure this period is here.
-      *>****************************************************************
-      *> Main program logic begins here.
-      *>****************************************************************
-       100-MAIN-LOGIC.
-           PERFORM 200-INITIALIZE-FILES.
+       01  USER-RECORDS.
+           05  USER-TABLE OCCURS 5 TIMES.
+               10 USER-USERNAME   PIC X(20).
+               10 USER-PASSWORD   PIC X(12).
 
-           MOVE "Welcome to InCollege!" TO WS-OUTPUT-LINE.
-           PERFORM 800-WRITE-TO-SCREEN-AND-FILE.
+       01  USER-COUNT             PIC 9 VALUE 0.
+       01  WS-EOF-FLAG            PIC A(1) VALUE 'N'.
+           88 END-OF-SECRETS-FILE VALUE 'Y'.
 
-           PERFORM 900-TERMINATE-PROGRAM.
+       01  VALIDATION-VARS.
+           05 PASSWORD-IS-VALID   PIC A(1).
+              88 IS-VALID         VALUE 'Y'.
+              88 IS-NOT-VALID     VALUE 'N'.
+           05 PASS-LEN            PIC 99.
+           05 CAPS-COUNT          PIC 99.
+           05 DIGIT-COUNT         PIC 99.
+           05 SPECIAL-COUNT       PIC 99.
+           05 I                   PIC 99.
 
-       800-WRITE-TO-SCREEN-AND-FILE.
-           DISPLAY WS-OUTPUT-LINE.
-           WRITE OutputRecord FROM WS-OUTPUT-LINE.
+       01  LOGIN-VARS.
+           05 LOGIN-USERNAME      PIC X(20).
+           05 LOGIN-PASSWORD      PIC X(12).
+           05 LOGIN-FOUND-FLAG    PIC A(1).
+              88 LOGIN-SUCCESSFUL VALUE 'Y'.
 
-       200-INITIALIZE-FILES.
-           OPEN INPUT InputFile.
-           OPEN OUTPUT OutputFile UserFile.
-
-       900-TERMINATE-PROGRAM.
-           CLOSE InputFile
-                 OutputFile
-                 UserFile.
+       PROCEDURE DIVISION.
+       MAIN-PROCEDURE.
+           OPEN INPUT INPUT-FILE.
+           OPEN OUTPUT OUTPUT-FILE.
+           PERFORM LOAD-USERS-FROM-FILE.
+           PERFORM INITIAL-PROMPT-PROCEDURE.
+           CLOSE INPUT-FILE.
+           CLOSE OUTPUT-FILE.
            STOP RUN.
+
+       LOAD-USERS-FROM-FILE.
+           OPEN INPUT SECRETS-FILE.
+           INITIALIZE USER-RECORDS.
+           MOVE 0 TO USER-COUNT.
+           MOVE "N" TO WS-EOF-FLAG.
+           PERFORM UNTIL END-OF-SECRETS-FILE
+               READ SECRETS-FILE
+                   AT END
+                       SET END-OF-SECRETS-FILE TO TRUE
+                   NOT AT END
+                       IF USER-COUNT < 5
+                           ADD 1 TO USER-COUNT
+                           MOVE SECRET-USERNAME TO
+                               USER-USERNAME(USER-COUNT)
+                           MOVE SECRET-PASSWORD TO
+                               USER-PASSWORD(USER-COUNT)
+                       END-IF
+               END-READ
+           END-PERFORM.
+           CLOSE SECRETS-FILE.
+
+       INITIAL-PROMPT-PROCEDURE.
+           MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           MOVE "1) Log In." TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           MOVE "2) Create New Account" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           MOVE "Enter your choice:" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           READ INPUT-FILE.
+           MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
+
+           IF INPUT-CHOICE-BUF = "1"
+               PERFORM LOGIN-PROCEDURE.
+           IF INPUT-CHOICE-BUF = "2"
+               PERFORM SIGN-UP-PROCEDURE.
+
+       LOGIN-PROCEDURE.
+           MOVE "N" TO LOGIN-FOUND-FLAG.
+
+           MOVE "Please enter your username:" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           READ INPUT-FILE.
+           MOVE INPUT-RECORD TO LOGIN-USERNAME.
+
+           MOVE "Please enter your password:" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           READ INPUT-FILE.
+           MOVE INPUT-RECORD TO LOGIN-PASSWORD.
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+              IF USER-USERNAME(I) = LOGIN-USERNAME AND
+                 USER-PASSWORD(I) = LOGIN-PASSWORD
+                   SET LOGIN-SUCCESSFUL TO TRUE
+                   EXIT PERFORM
+              END-IF
+           END-PERFORM.
+
+           IF LOGIN-SUCCESSFUL
+               MOVE "You have successfully logged in." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM POST-LOGIN-NAVIGATION
+           ELSE
+               MOVE "Incorrect username/password, please try again."
+               TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM INITIAL-PROMPT-PROCEDURE
+           END-IF.
+
+       SIGN-UP-PROCEDURE.
+           IF USER-COUNT >= 5
+               MOVE "All permitted accounts have been created, please" &
+               " come back later" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           ELSE
+               MOVE "Please enter your username:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               READ INPUT-FILE
+               ADD 1 TO USER-COUNT
+               MOVE INPUT-RECORD TO USER-USERNAME(USER-COUNT)
+
+               MOVE "Please enter your password:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               READ INPUT-FILE
+               MOVE INPUT-RECORD TO USER-PASSWORD(USER-COUNT)
+
+               PERFORM VALIDATE-PASSWORD-PROCEDURE
+
+               IF IS-VALID
+                   MOVE "Account created successfully." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM SAVE-USERS-TO-FILE
+               ELSE
+                   MOVE "Password does not meet the requirements."
+                   TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   SUBTRACT 1 FROM USER-COUNT
+               END-IF
+           END-IF.
+
+       VALIDATE-PASSWORD-PROCEDURE.
+           SET IS-VALID TO TRUE.
+           INITIALIZE CAPS-COUNT, DIGIT-COUNT, SPECIAL-COUNT.
+           COMPUTE PASS-LEN = FUNCTION LENGTH(
+               FUNCTION TRIM(USER-PASSWORD(USER-COUNT))).
+
+           IF PASS-LEN < 8 OR PASS-LEN > 12
+               SET IS-NOT-VALID TO TRUE.
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > PASS-LEN
+              IF USER-PASSWORD(USER-COUNT)(I:1) >= "A" AND
+                 USER-PASSWORD(USER-COUNT)(I:1) <= "Z"
+                   ADD 1 TO CAPS-COUNT
+              END-IF
+              IF USER-PASSWORD(USER-COUNT)(I:1) >= "0" AND
+                 USER-PASSWORD(USER-COUNT)(I:1) <= "9"
+                   ADD 1 TO DIGIT-COUNT
+              END-IF
+              IF USER-PASSWORD(USER-COUNT)(I:1) = "!" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "@" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "#" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "$" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "%" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "^" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "&" OR
+                 USER-PASSWORD(USER-COUNT)(I:1) = "*"
+                   ADD 1 TO SPECIAL-COUNT
+              END-IF
+           END-PERFORM.
+
+           IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
+               SET IS-NOT-VALID TO TRUE.
+
+       SAVE-USERS-TO-FILE.
+           OPEN OUTPUT SECRETS-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+               MOVE USER-USERNAME(I) TO SECRET-USERNAME
+               MOVE USER-PASSWORD(I) TO SECRET-PASSWORD
+               WRITE SECRETS-RECORD
+           END-PERFORM.
+           CLOSE SECRETS-FILE.
+
+       POST-LOGIN-NAVIGATION.
+           EXIT.
+
+       DISPLAY-AND-WRITE-OUTPUT.
+           DISPLAY TO-OUTPUT-BUF.
+           MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
+           WRITE OUTPUT-RECORD.
+
