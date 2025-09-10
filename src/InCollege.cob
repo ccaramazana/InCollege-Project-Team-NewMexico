@@ -12,7 +12,6 @@
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS WS-SEC-STATUS.
                     
-      
        DATA DIVISION.
            
        FILE SECTION.
