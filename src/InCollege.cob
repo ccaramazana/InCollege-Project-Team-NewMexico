@@ -129,9 +129,7 @@
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
       
            PERFORM READ-INPUT-SAFELY.
-           IF EXIT-PROGRAM
-               STOP RUN
-           END-IF
+           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
            MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
 
            IF INPUT-CHOICE-BUF = "1"
