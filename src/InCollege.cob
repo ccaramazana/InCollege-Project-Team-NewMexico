@@ -56,6 +56,12 @@
        01  MENU-EXIT-FLAG         PIC A(1).
            88 EXIT-MENU           VALUE 'Y'.
 
+       01 SIGNUP-VARS.
+           05 SIGNUP-USERNAME PIC X(20).
+           05 USERNAME-EXISTS-FLAG PIC A(1).
+               88 USERNAME-EXISTS VALUE "Y".
+               88 USERNAME-DOESNT-EXIST VALUE "N".
+
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
