@@ -62,6 +62,9 @@
        01  MENU-EXIT-FLAG         PIC A(1).
            88 EXIT-MENU           VALUE 'Y'.
 
+       01 SKILLS-MENU-EXIT-FLAG PIC A(1).
+           88 EXIT-SKILLS-MENU VALUE 'Y'.
+
        01 SIGNUP-VARS.
            05 SIGNUP-USERNAME PIC X(20).
            05 USERNAME-EXISTS-FLAG PIC A(1).
@@ -326,7 +329,7 @@
 
        SKILLS-MENU-PROCEDURE.
            MOVE "N" TO MENU-EXIT-FLAG.
-           PERFORM UNTIL EXIT-MENU
+           PERFORM UNTIL EXIT-SKILLS-MENU
                MOVE "1) Advanced COBOL" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) JCL Management" TO TO-OUTPUT-BUF
@@ -350,7 +353,7 @@
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
                IF INPUT-CHOICE-BUF = "6"
-                   SET EXIT-MENU TO TRUE
+                   SET EXIT-SKILLS-MENU TO TRUE
                END-IF
            END-PERFORM.
 
