@@ -82,6 +82,12 @@
            CLOSE OUTPUT-FILE.
            STOP RUN.
 
+       READ-INPUT-SAFELY.
+           READ INPUT-FILE
+               AT END
+                   SET EXIT-PROGRAM TO TRUE
+           END-READ.
+
        LOAD-USERS-FROM-FILE.
       
            OPEN INPUT SECRETS-FILE.
