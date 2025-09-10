@@ -25,6 +25,10 @@
 
        WORKING-STORAGE SECTION.
 
+       01 PROGRAM-STATUS
+           05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
+               88 EXIT-PROGRAM VALUE 'Y'.
+
        01  TO-OUTPUT-BUF          PIC X(80).
        01  INPUT-CHOICE-BUF       PIC X(1).
 
