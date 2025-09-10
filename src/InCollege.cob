@@ -12,19 +12,19 @@
                ORGANIZATION IS LINE SEQUENTIAL.
 
        DATA DIVISION.
+           
        FILE SECTION.
        FD  INPUT-FILE.
        01  INPUT-RECORD           PIC X(80).
-
        FD  OUTPUT-FILE.
        01  OUTPUT-RECORD          PIC X(80).
-
        FD  SECRETS-FILE.
        01  SECRETS-RECORD.
            05 SECRET-USERNAME     PIC X(20).
            05 SECRET-PASSWORD     PIC X(12).
 
        WORKING-STORAGE SECTION.
+
        01  TO-OUTPUT-BUF          PIC X(80).
        01  INPUT-CHOICE-BUF       PIC X(1).
 
@@ -57,6 +57,7 @@
            88 EXIT-MENU           VALUE 'Y'.
 
        PROCEDURE DIVISION.
+
        MAIN-PROCEDURE.
            OPEN INPUT INPUT-FILE.
            OPEN OUTPUT OUTPUT-FILE.
