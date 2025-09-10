@@ -123,7 +123,10 @@
            MOVE "Enter your choice:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
       
-           READ INPUT-FILE.
+           PERFORM READ-INPUT-SAFELY.
+           IF EXIT-PROGRAM
+               STOP RUN
+           END-IF
            MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
 
            IF INPUT-CHOICE-BUF = "1"
