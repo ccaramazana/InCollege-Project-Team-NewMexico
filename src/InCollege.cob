@@ -9,7 +9,9 @@
            SELECT OUTPUT-FILE ASSIGN TO "output.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
            SELECT SECRETS-FILE ASSIGN TO "secrets.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS WS-SEC-STATUS.
+                    
       
        DATA DIVISION.
            
@@ -25,6 +27,8 @@
 
        WORKING-STORAGE SECTION.
 
+       01 WS-SEC-STATUS           PIC XX VALUES SPACES.
+       
        01  TO-OUTPUT-BUF          PIC X(80).
        01  INPUT-CHOICE-BUF       PIC X(1).
 
@@ -80,11 +84,19 @@
 
        LOAD-USERS-FROM-FILE.
       
-           OPEN INPUT SECRETS-FILE.
-      
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
            MOVE "N" TO WS-EOF-FLAG.
+
+           OPEN INPUT SECRETS-FILE.
+
+           IF WS-SEC-STATUS = "35"
+               OPEN OUTPUT SECRETS-FILE
+               CLOSE SECRETS-FILE
+               OPEN INPUT SECRETS-FILE
+               MOVE "00" TO WS-SEC-STATUS
+           END-IF
+      
            PERFORM UNTIL END-OF-SECRETS-FILE
                READ SECRETS-FILE
                    AT END
