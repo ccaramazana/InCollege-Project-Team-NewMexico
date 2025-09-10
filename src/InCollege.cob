@@ -155,6 +155,8 @@
                ADD 1 TO USER-COUNT
                MOVE INPUT-RECORD TO USER-USERNAME(USER-COUNT)
 
+               PERFORM CHECK-USERNAME-EXISTS
+
                MOVE "Please enter your password:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                READ INPUT-FILE
