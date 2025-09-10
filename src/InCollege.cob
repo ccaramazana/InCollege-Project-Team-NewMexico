@@ -152,29 +152,39 @@
                MOVE "Please enter your username:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                READ INPUT-FILE
+               MOVE INPUT-RECORD TO SIGNUP-USERNAME
 
                PERFORM CHECK-USERNAME-EXISTS
 
-               ADD 1 TO USER-COUNT
-               MOVE INPUT-RECORD TO USER-USERNAME(USER-COUNT)
-
-
-               MOVE "Please enter your password:" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               READ INPUT-FILE
-               MOVE INPUT-RECORD TO USER-PASSWORD(USER-COUNT)
-
-               PERFORM VALIDATE-PASSWORD-PROCEDURE
-
-               IF IS-VALID
-                   MOVE "Account created successfully." TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   PERFORM SAVE-USERS-TO-FILE
-               ELSE
-                   MOVE "Password does not meet the requirements."
+               IF USERNAME-EXISTS
+                   MOVE "Username already exists. Please try another."
                    TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   SUBTRACT 1 FROM USER-COUNT
+                   PERFORM INITIAL-PROMPT-PROCEDURE
+               ELSE
+                   ADD 1 TO USER-COUNT
+                   MOVE SIGNUP-USERNAME TO USER-USERNAME(USER-COUNT)
+
+
+                   MOVE "Please enter your password:" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   READ INPUT-FILE
+                   MOVE INPUT-RECORD TO USER-PASSWORD(USER-COUNT)
+
+                   PERFORM VALIDATE-PASSWORD-PROCEDURE
+
+                   IF IS-VALID
+                       MOVE "Account created successfully." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       PERFORM SAVE-USERS-TO-FILE
+                       PERFORM INITIAL-PROMPT-PROCEDURE
+                   ELSE
+                       MOVE "Password does not meet the requirements."
+                       TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       SUBTRACT 1 FROM USER-COUNT
+                       PERFORM INITIAL-PROMPT-PROCEDURE
+                   END-IF
                END-IF
            END-IF.
 
@@ -185,7 +195,7 @@
                    SET USERNAME-EXISTS TO TRUE
                    EXIT PERFORM
                END-IF
-           END-PERFORM
+           END-PERFORM.
 
        VALIDATE-PASSWORD-PROCEDURE.
            SET IS-VALID TO TRUE.
