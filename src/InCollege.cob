@@ -10,7 +10,7 @@
                ORGANIZATION IS LINE SEQUENTIAL.
            SELECT SECRETS-FILE ASSIGN TO "secrets.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
-
+      
        DATA DIVISION.
            
        FILE SECTION.
@@ -47,6 +47,8 @@
            05 SPECIAL-COUNT       PIC 99.
            05 I                   PIC 99.
 
+       01  TEMP-PASSWORD          PIC X(80).
+
        01  LOGIN-VARS.
            05 LOGIN-USERNAME      PIC X(20).
            05 LOGIN-PASSWORD      PIC X(12).
@@ -65,16 +67,21 @@
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
+      
            OPEN INPUT INPUT-FILE.
            OPEN OUTPUT OUTPUT-FILE.
+      
            PERFORM LOAD-USERS-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
+      
            CLOSE INPUT-FILE.
            CLOSE OUTPUT-FILE.
            STOP RUN.
 
        LOAD-USERS-FROM-FILE.
+      
            OPEN INPUT SECRETS-FILE.
+      
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
            MOVE "N" TO WS-EOF-FLAG.
@@ -92,9 +99,11 @@
                        END-IF
                END-READ
            END-PERFORM.
+      
            CLOSE SECRETS-FILE.
 
        INITIAL-PROMPT-PROCEDURE.
+      
            MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "1) Log In." TO TO-OUTPUT-BUF.
@@ -103,6 +112,7 @@
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "Enter your choice:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
+      
            READ INPUT-FILE.
            MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
 
@@ -112,8 +122,9 @@
                PERFORM SIGN-UP-PROCEDURE.
 
        LOGIN-PROCEDURE.
+      
            MOVE "N" TO LOGIN-FOUND-FLAG.
-
+      
            MOVE "Please enter your username:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            READ INPUT-FILE.
@@ -133,22 +144,30 @@
            END-PERFORM.
 
            IF LOGIN-SUCCESSFUL
+      
                MOVE "You have successfully logged in." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM POST-LOGIN-NAVIGATION
+      
            ELSE
+      
                MOVE "Incorrect username/password, please try again."
                TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM INITIAL-PROMPT-PROCEDURE
+      
            END-IF.
 
        SIGN-UP-PROCEDURE.
+      
            IF USER-COUNT >= 5
+      
                MOVE "All permitted accounts have been created, please" &
                " come back later" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
+      
            ELSE
+      
                MOVE "Please enter your username:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                READ INPUT-FILE
@@ -157,34 +176,43 @@
                PERFORM CHECK-USERNAME-EXISTS
 
                IF USERNAME-EXISTS
+      
                    MOVE "Username already exists. Please try another."
                    TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    PERFORM INITIAL-PROMPT-PROCEDURE
+      
                ELSE
-                   ADD 1 TO USER-COUNT
-                   MOVE SIGNUP-USERNAME TO USER-USERNAME(USER-COUNT)
-
-
+      
                    MOVE "Please enter your password:" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    READ INPUT-FILE
-                   MOVE INPUT-RECORD TO USER-PASSWORD(USER-COUNT)
+                   MOVE INPUT-RECORD TO TEMP-PASSWORD
 
                    PERFORM VALIDATE-PASSWORD-PROCEDURE
 
                    IF IS-VALID
+      
+                       ADD 1 TO USER-COUNT
+                       MOVE SIGNUP-USERNAME TO USER-USERNAME(USER-COUNT)
+                       MOVE TEMP-PASSWORD TO USER-PASSWORD(USER-COUNT)
+      
                        MOVE "Account created successfully." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
+      
                        PERFORM SAVE-USERS-TO-FILE
+      
                        PERFORM INITIAL-PROMPT-PROCEDURE
+      
                    ELSE
+      
                        MOVE "Password does not meet the requirements."
                        TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
-                       SUBTRACT 1 FROM USER-COUNT
                        PERFORM INITIAL-PROMPT-PROCEDURE
+      
                    END-IF
+      
                END-IF
            END-IF.
 
@@ -198,33 +226,40 @@
            END-PERFORM.
 
        VALIDATE-PASSWORD-PROCEDURE.
+      
            SET IS-VALID TO TRUE.
+      
            INITIALIZE CAPS-COUNT, DIGIT-COUNT, SPECIAL-COUNT.
+      
            COMPUTE PASS-LEN = FUNCTION LENGTH(
-               FUNCTION TRIM(USER-PASSWORD(USER-COUNT))).
+               FUNCTION TRIM(TEMP-PASSWORD)).
 
            IF PASS-LEN < 8 OR PASS-LEN > 12
                SET IS-NOT-VALID TO TRUE.
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > PASS-LEN
-              IF USER-PASSWORD(USER-COUNT)(I:1) >= "A" AND
-                 USER-PASSWORD(USER-COUNT)(I:1) <= "Z"
+      
+              IF TEMP-PASSWORD(I:1) >= "A" AND
+                 TEMP-PASSWORD(I:1) <= "Z"
                    ADD 1 TO CAPS-COUNT
               END-IF
-              IF USER-PASSWORD(USER-COUNT)(I:1) >= "0" AND
-                 USER-PASSWORD(USER-COUNT)(I:1) <= "9"
+      
+              IF TEMP-PASSWORD(I:1) >= "0" AND
+                 TEMP-PASSWORD(I:1) <= "9"
                    ADD 1 TO DIGIT-COUNT
               END-IF
-              IF USER-PASSWORD(USER-COUNT)(I:1) = "!" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "@" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "#" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "$" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "%" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "^" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "&" OR
-                 USER-PASSWORD(USER-COUNT)(I:1) = "*"
+      
+              IF TEMP-PASSWORD(I:1) = "!" OR
+                 TEMP-PASSWORD(I:1) = "@" OR
+                 TEMP-PASSWORD(I:1) = "#" OR
+                 TEMP-PASSWORD(I:1) = "$" OR
+                 TEMP-PASSWORD(I:1) = "%" OR
+                 TEMP-PASSWORD(I:1) = "^" OR
+                 TEMP-PASSWORD(I:1) = "&" OR
+                 TEMP-PASSWORD(I:1) = "*"
                    ADD 1 TO SPECIAL-COUNT
               END-IF
+      
            END-PERFORM.
 
            IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
@@ -254,7 +289,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                READ INPUT-FILE
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
-
+      
                IF INPUT-CHOICE-BUF = "1" OR INPUT-CHOICE-BUF = "2"
                    MOVE "Under construction." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -300,4 +335,3 @@
            DISPLAY TO-OUTPUT-BUF.
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
            WRITE OUTPUT-RECORD.
-
