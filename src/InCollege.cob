@@ -189,8 +189,7 @@
       
                MOVE "Please enter your username:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY.
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
+               READ INPUT-FILE
                MOVE INPUT-RECORD TO SIGNUP-USERNAME
 
                PERFORM CHECK-USERNAME-EXISTS
@@ -206,8 +205,7 @@
       
                    MOVE "Please enter your password:" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   PERFORM READ-INPUT-SAFELY.
-                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
+                   READ INPUT-FILE
                    MOVE INPUT-RECORD TO TEMP-PASSWORD
 
                    PERFORM VALIDATE-PASSWORD-PROCEDURE
@@ -308,8 +306,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY.
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
+               READ INPUT-FILE
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
       
                IF INPUT-CHOICE-BUF = "1" OR INPUT-CHOICE-BUF = "2"
@@ -341,8 +338,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY.
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
+               READ INPUT-FILE
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
 
                IF INPUT-CHOICE-BUF >= "1" AND INPUT-CHOICE-BUF <= "5"
