@@ -165,6 +165,7 @@
                MOVE "All permitted accounts have been created, please" &
                " come back later" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM INITIAL-PROMPT-PROCEDURE
       
            ELSE
       
