@@ -198,6 +198,7 @@
               IF USER-USERNAME(I) = LOGIN-USERNAME AND
                  USER-PASSWORD(I) = LOGIN-PASSWORD
                    SET LOGIN-SUCCESSFUL TO TRUE
+                   MOVE I TO LOGGED-IN-RANK
                    EXIT PERFORM
               END-IF
            END-PERFORM.
