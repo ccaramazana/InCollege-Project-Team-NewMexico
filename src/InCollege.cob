@@ -39,6 +39,15 @@
                10 USER-USERNAME   PIC X(20).
                10 USER-PASSWORD   PIC X(12).
 
+       01 USER-PROFILES.
+           05 USER-PROFILES-TABLE OCCURS 5 TIMES.
+               10 USER-FIRST-NAME PIC X(80).
+               10 USER-LAST-NAME PIC X(80).
+               10 USER-UNIVERSITY PIC X(80).
+               10 USER-MAJOR PIC X(80).
+               10 USER-GRADUATION-YEAR PIC 9(4).
+               10 USER-ABOUT-ME PIC X(80).
+
        01  USER-COUNT             PIC 9 VALUE 0.
        01  WS-EOF-FLAG            PIC A(1) VALUE 'N'.
            88 END-OF-SECRETS-FILE VALUE 'Y'.
