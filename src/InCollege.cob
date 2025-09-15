@@ -42,7 +42,6 @@
                10 PROF-EDU-UNIVERSITY PIC X(80).
                10 PROF-EDU-YEARS PIC X(80).
 
-
        WORKING-STORAGE SECTION.
 
        01 PROGRAM-STATUS.
@@ -94,6 +93,7 @@
        01  LOGIN-VARS.
            05 LOGIN-USERNAME      PIC X(20).
            05 LOGIN-PASSWORD      PIC X(12).
+           05 LOGGED-IN-RANK      9.
            05 LOGIN-FOUND-FLAG    PIC A(1).
               88 LOGIN-SUCCESSFUL VALUE 'Y'.
 
