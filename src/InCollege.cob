@@ -10,6 +10,8 @@
                ORGANIZATION IS LINE SEQUENTIAL.
            SELECT SECRETS-FILE ASSIGN TO "secrets.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
+           SELECT PROFILES-FILE ASSIGN TO "profiles.txt"
+               ORGANIZATION IS LINE SEQUENTIAL.
       
        DATA DIVISION.
            
