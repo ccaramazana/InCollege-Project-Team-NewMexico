@@ -135,9 +135,7 @@
            STOP RUN.
 
        LOAD-USERS-FROM-FILE.
-      
            OPEN INPUT SECRETS-FILE.
-      
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
            MOVE "N" TO WS-EOF-FLAG.
@@ -155,15 +153,19 @@
                        END-IF
                END-READ
            END-PERFORM.
-      
            CLOSE SECRETS-FILE.
 
        LOAD-PROFILES-FROM-FILE.
-
            OPEN INPUT PROFILES-FILE.
-
+           INITIALIZE USER-PROFILES.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+               READ PROFILES-FILE
+                   AT END EXIT PERFORM 
+                   NOT AT END
+                       MOVE PROFILES-RECORD TO USER-PROFILES-TABLE(I)
+               END-READ
+           END-PERFORM
            CLOSE PROFILES-FILE.
-
        INITIAL-PROMPT-PROCEDURE.
       
            MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
@@ -205,6 +207,8 @@
                  USER-PASSWORD(I) = LOGIN-PASSWORD
                    SET LOGIN-SUCCESSFUL TO TRUE
                    MOVE I TO LOGGED-IN-RANK
+                   MOVE I TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
               END-IF
            END-PERFORM.
