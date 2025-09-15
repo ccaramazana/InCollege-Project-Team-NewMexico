@@ -55,6 +55,15 @@
                10 USER-MAJOR PIC X(80).
                10 USER-GRADUATION-YEAR PIC 9(4).
                10 USER-ABOUT-ME PIC X(80).
+               10 USER-EXPERIENCES OCCURS 3 TIMES.
+                   15 EXP-TITLE PIC X(80).
+                   15 EXP-COMPANY PIC X(80).
+                   15 EXP-DATES PIC X(80).
+                   15 EXP-DESCRIPTION PIC X(80).
+               10 USER-EDUCATION OCCURS 3 TIMES.
+                   15 EDU-DEGREE PIC X(80).
+                   15 EDU-UNIVERSITY PIC X(80).
+                   15 EDU-YEARS PIC X(80).
 
        01  USER-COUNT             PIC 9 VALUE 0.
        01  WS-EOF-FLAG            PIC A(1) VALUE 'N'.
