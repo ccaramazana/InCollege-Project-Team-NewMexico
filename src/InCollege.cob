@@ -201,8 +201,6 @@
                  USER-PASSWORD(I) = LOGIN-PASSWORD
                    SET LOGIN-SUCCESSFUL TO TRUE
                    MOVE I TO LOGGED-IN-RANK
-                   MOVE I TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
               END-IF
            END-PERFORM.
