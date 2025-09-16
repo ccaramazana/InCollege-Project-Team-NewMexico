@@ -146,7 +146,10 @@
                    NOT AT END
                        IF USER-COUNT < 5
                            ADD 1 TO USER-COUNT
-                           MOVE SECRETS-RECORD TO USER-TABLE(I)
+                           MOVE SECRET-USERNAME TO
+                               USER-USERNAME(USER-COUNT)
+                           MOVE SECRET-PASSWORD TO
+                               USER-PASSWORD(USER-COUNT)
                        END-IF
                END-READ
            END-PERFORM.
@@ -163,8 +166,8 @@
                END-READ
            END-PERFORM
            CLOSE PROFILES-FILE.
-
        INITIAL-PROMPT-PROCEDURE.
+      
            MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "1) Log In." TO TO-OUTPUT-BUF.
