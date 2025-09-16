@@ -159,8 +159,9 @@
                END-READ
            END-PERFORM
            CLOSE PROFILES-FILE.
+
        INITIAL-PROMPT-PROCEDURE.
-      
+
            MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "1) Log In." TO TO-OUTPUT-BUF.
@@ -280,6 +281,7 @@
                    END-IF
       
                END-IF
+
            END-IF.
 
        CHECK-USERNAME-EXISTS.
@@ -292,29 +294,21 @@
            END-PERFORM.
 
        VALIDATE-PASSWORD-PROCEDURE.
-      
            SET IS-VALID TO TRUE.
-      
            INITIALIZE CAPS-COUNT, DIGIT-COUNT, SPECIAL-COUNT.
-      
            COMPUTE PASS-LEN = FUNCTION LENGTH(
                FUNCTION TRIM(TEMP-PASSWORD)).
-
            IF PASS-LEN < 8 OR PASS-LEN > 12
                SET IS-NOT-VALID TO TRUE.
-
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > PASS-LEN
-      
               IF TEMP-PASSWORD(I:1) >= "A" AND
                  TEMP-PASSWORD(I:1) <= "Z"
                    ADD 1 TO CAPS-COUNT
               END-IF
-      
               IF TEMP-PASSWORD(I:1) >= "0" AND
                  TEMP-PASSWORD(I:1) <= "9"
                    ADD 1 TO DIGIT-COUNT
               END-IF
-      
               IF TEMP-PASSWORD(I:1) = "!" OR
                  TEMP-PASSWORD(I:1) = "@" OR
                  TEMP-PASSWORD(I:1) = "#" OR
@@ -325,9 +319,7 @@
                  TEMP-PASSWORD(I:1) = "*"
                    ADD 1 TO SPECIAL-COUNT
               END-IF
-      
            END-PERFORM.
-
            IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
                SET IS-NOT-VALID TO TRUE.
 
@@ -349,18 +341,25 @@
            CLOSE PROFILES-FILE.
 
        POST-LOGIN-NAVIGATION.
+
            MOVE "N" TO MENU-EXIT-FLAG.
            PERFORM UNTIL EXIT-MENU
-               MOVE "1) Search for a job" TO TO-OUTPUT-BUF
+
+               MOVE "1) Create/Edit My Profile" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "2) Find someone you know" TO TO-OUTPUT-BUF
+               MOVE "2) View My Profile" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "3) Learn a new skill" TO TO-OUTPUT-BUF
+               MOVE "3) Search for a job" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "4) Log Out" TO TO-OUTPUT-BUF
+               MOVE "4) Find someone you know" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "5) Learn a new skill" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "6) Log Out" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
+
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
