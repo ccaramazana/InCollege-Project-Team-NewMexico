@@ -12,18 +12,18 @@
                ORGANIZATION IS LINE SEQUENTIAL.
            SELECT PROFILES-FILE ASSIGN TO "profiles.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
-      
+
        DATA DIVISION.
-           
+
        FILE SECTION.
        FD  INPUT-FILE.
-       01  INPUT-RECORD           PIC X(80).
+       01  INPUT-RECORD PIC X(80).
        FD  OUTPUT-FILE.
-       01  OUTPUT-RECORD          PIC X(80).
+       01  OUTPUT-RECORD PIC X(80).
        FD  SECRETS-FILE.
        01  SECRETS-RECORD.
-           05 SECRET-USERNAME     PIC X(20).
-           05 SECRET-PASSWORD     PIC X(12).
+           05 SECRET-USERNAME PIC X(20).
+           05 SECRET-PASSWORD PIC X(12).
        FD PROFILES-FILE.
        01 PROFILES-RECORD.
            05 PROFILE-FIRST-NAME PIC X(80).
@@ -48,13 +48,13 @@
            05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
                88 EXIT-PROGRAM VALUE 'Y'.
 
-       01  TO-OUTPUT-BUF          PIC X(80).
-       01  INPUT-CHOICE-BUF       PIC X(1).
+       01  TO-OUTPUT-BUF PIC X(80).
+       01  INPUT-CHOICE-BUF PIC X(1).
 
        01  USER-RECORDS.
            05  USER-TABLE OCCURS 5 TIMES.
-               10 USER-USERNAME   PIC X(20).
-               10 USER-PASSWORD   PIC X(12).
+               10 USER-USERNAME PIC X(20).
+               10 USER-PASSWORD PIC X(12).
 
        01 USER-PROFILES.
            05 USER-PROFILES-TABLE OCCURS 5 TIMES.
@@ -74,29 +74,29 @@
                    15 EDU-UNIVERSITY PIC X(80).
                    15 EDU-YEARS PIC X(80).
 
-       01  USER-COUNT             PIC 9 VALUE 0.
+       01  USER-COUNT PIC 9 VALUE 0.
 
        01  VALIDATION-VARS.
-           05 PASSWORD-IS-VALID   PIC A(1).
-              88 IS-VALID         VALUE 'Y'.
-              88 IS-NOT-VALID     VALUE 'N'.
-           05 PASS-LEN            PIC 99.
-           05 CAPS-COUNT          PIC 99.
-           05 DIGIT-COUNT         PIC 99.
-           05 SPECIAL-COUNT       PIC 99.
-           05 I                   PIC 99.
+           05 PASSWORD-IS-VALID PIC A(1).
+              88 IS-VALID VALUE 'Y'.
+              88 IS-NOT-VALID VALUE 'N'.
+           05 PASS-LEN PIC 99.
+           05 CAPS-COUNT PIC 99.
+           05 DIGIT-COUNT PIC 99.
+           05 SPECIAL-COUNT PIC 99.
+           05 I PIC 99.
 
-       01  TEMP-PASSWORD          PIC X(80).
+       01  TEMP-PASSWORD PIC X(80).
 
        01  LOGIN-VARS.
-           05 LOGIN-USERNAME      PIC X(20).
-           05 LOGIN-PASSWORD      PIC X(12).
-           05 LOGGED-IN-RANK      PIC 9.
-           05 LOGIN-FOUND-FLAG    PIC A(1).
+           05 LOGIN-USERNAME PIC X(20).
+           05 LOGIN-PASSWORD PIC X(12).
+           05 LOGGED-IN-RANK PIC 9.
+           05 LOGIN-FOUND-FLAG PIC A(1).
               88 LOGIN-SUCCESSFUL VALUE 'Y'.
 
-       01  MENU-EXIT-FLAG         PIC A(1).
-           88 EXIT-MENU           VALUE 'Y'.
+       01  MENU-EXIT-FLAG PIC A(1).
+           88 EXIT-MENU VALUE 'Y'.
 
        01 SKILLS-MENU-EXIT-FLAG PIC A(1).
            88 EXIT-SKILLS-MENU VALUE 'Y'.
@@ -110,18 +110,17 @@
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
-      
+
            OPEN INPUT INPUT-FILE.
            OPEN OUTPUT OUTPUT-FILE.
-      
+
            PERFORM LOAD-USERS-FROM-FILE.
            PERFORM LOAD-PROFILES-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
-      
+
            CLOSE INPUT-FILE.
            CLOSE OUTPUT-FILE.
            STOP RUN.
-
 
        LOAD-USERS-FROM-FILE.
            OPEN INPUT SECRETS-FILE.
@@ -160,7 +159,7 @@
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "Enter your choice:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
-      
+
            PERFORM READ-INPUT-SAFELY.
            IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
            MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
@@ -171,9 +170,9 @@
                PERFORM SIGN-UP-PROCEDURE.
 
        LOGIN-PROCEDURE.
-      
+
            MOVE "N" TO LOGIN-FOUND-FLAG.
-      
+
            MOVE "Please enter your username:" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            PERFORM READ-INPUT-SAFELY.
@@ -196,31 +195,31 @@
            END-PERFORM.
 
            IF LOGIN-SUCCESSFUL
-      
+
                MOVE "You have successfully logged in." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM POST-LOGIN-NAVIGATION
-      
+
            ELSE
-      
+
                MOVE "Incorrect username/password, please try again."
                TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM INITIAL-PROMPT-PROCEDURE
-      
+
            END-IF.
 
        SIGN-UP-PROCEDURE.
-      
+
            IF USER-COUNT >= 5
-      
+
                MOVE "All permitted accounts have been created, please" &
                " come back later" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM INITIAL-PROMPT-PROCEDURE
-      
+
            ELSE
-      
+
                MOVE "Please enter your username:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
@@ -230,14 +229,14 @@
                PERFORM CHECK-USERNAME-EXISTS
 
                IF USERNAME-EXISTS
-      
+
                    MOVE "Username already exists. Please try another."
                    TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    PERFORM INITIAL-PROMPT-PROCEDURE
-      
+
                ELSE
-      
+
                    MOVE "Please enter your password:" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    PERFORM READ-INPUT-SAFELY
@@ -247,27 +246,27 @@
                    PERFORM VALIDATE-PASSWORD-PROCEDURE
 
                    IF IS-VALID
-      
+
                        ADD 1 TO USER-COUNT
                        MOVE SIGNUP-USERNAME TO USER-USERNAME(USER-COUNT)
                        MOVE TEMP-PASSWORD TO USER-PASSWORD(USER-COUNT)
-      
+
                        MOVE "Account created successfully." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
-      
+
                        PERFORM SAVE-USERS-TO-FILE
-      
+
                        PERFORM INITIAL-PROMPT-PROCEDURE
-      
+
                    ELSE
-      
+
                        MOVE "Password does not meet the requirements."
                        TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                        PERFORM INITIAL-PROMPT-PROCEDURE
-      
+
                    END-IF
-      
+
                END-IF
 
            END-IF.
@@ -351,7 +350,7 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
-      
+
                IF INPUT-CHOICE-BUF = "1"
                    PERFORM CREATE-PROFILE-PROCEDURE
                END-IF
@@ -372,7 +371,7 @@
                IF INPUT-CHOICE-BUF = "6"
                    SET EXIT-MENU TO TRUE
                END-IF
-               
+
            END-PERFORM.
 
        SKILLS-MENU-PROCEDURE.
@@ -411,7 +410,7 @@
            END-PERFORM.
 
        CREATE-PROFILE-PROCEDURE.
-           MOVE "TBD" TO TO-OUTPUT-BUF.
+           MOVE "--Create/Edit Profile--" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
        VIEW-PROFILE-PROCEDURE.
