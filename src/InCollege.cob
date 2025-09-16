@@ -122,16 +122,6 @@
            CLOSE OUTPUT-FILE.
            STOP RUN.
 
-       READ-INPUT-SAFELY.
-           READ INPUT-FILE
-               AT END
-                   SET EXIT-PROGRAM TO TRUE
-           END-READ.
-
-       EXIT-EARLY.
-           CLOSE INPUT-FILE.
-           CLOSE OUTPUT-FILE.
-           STOP RUN.
 
        LOAD-USERS-FROM-FILE.
            OPEN INPUT SECRETS-FILE.
@@ -432,3 +422,14 @@
            DISPLAY TO-OUTPUT-BUF.
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
            WRITE OUTPUT-RECORD.
+
+       READ-INPUT-SAFELY.
+           READ INPUT-FILE
+               AT END
+                   SET EXIT-PROGRAM TO TRUE
+           END-READ.
+
+       EXIT-EARLY.
+           CLOSE INPUT-FILE.
+           CLOSE OUTPUT-FILE.
+           STOP RUN.
