@@ -430,6 +430,7 @@
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
                END-IF
+               MOVE INPUT-RECORD TO USER-FIRST-NAME(LOGGED-IN-RANK)
            END-PERFORM.
 
        VIEW-PROFILE-PROCEDURE.
