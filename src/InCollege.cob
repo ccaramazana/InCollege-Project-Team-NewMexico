@@ -413,8 +413,24 @@
            END-PERFORM.
 
        CREATE-PROFILE-PROCEDURE.
+
            MOVE "--Create/Edit Profile--" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+           MOVE "N" TO PROFILE-CREATION-FAILURE-FLAG.
+
+           PERFORM
+               MOVE "Enter First Name:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES 
+                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+                   MOVE "Invalid First Name" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   EXIT PERFORM
+               END-IF
+           END-PERFORM.
 
        VIEW-PROFILE-PROCEDURE.
            MOVE "TBD" TO TO-OUTPUT-BUF.
