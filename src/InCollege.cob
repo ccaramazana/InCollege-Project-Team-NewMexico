@@ -447,8 +447,7 @@
            END-PERFORM.
 
            PERFORM IF NOT EXIT-PROFILE-CREATION
-               MOVE "Enter University/College attended:" TO
-               TO-OUTPUT-BUF
+               MOVE "Enter University/College attended:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
@@ -462,8 +461,7 @@
            END-PERFORM.
            
            PERFORM IF NOT EXIT-PROFILE-CREATION
-               MOVE "Enter Major:" TO
-               TO-OUTPUT-BUF
+               MOVE "Enter Major:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
@@ -498,6 +496,21 @@
 
                MOVE INPUT-RECORD TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
 
+           END-PERFORM.
+
+           PERFORM IF NOT EXIT-PROFILE-CREATION
+               MOVE "Enter About Me (Optional):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES 
+                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+                   MOVE "Empty About Me" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   MOVE SPACES to USER-ABOUT-ME(LOGGED-IN-RANK)
+                   EXIT PERFORM
+               END-IF
+               MOVE INPUT-RECORD TO USER-ABOUT-ME(LOGGED-IN-RANK)
            END-PERFORM.
 
            IF NOT EXIT-PROFILE-CREATION
