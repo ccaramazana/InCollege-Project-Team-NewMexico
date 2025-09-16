@@ -139,18 +139,13 @@
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
            MOVE "N" TO WS-EOF-FLAG.
-           PERFORM UNTIL END-OF-SECRETS-FILE
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > 5
                READ SECRETS-FILE
                    AT END
-                       SET END-OF-SECRETS-FILE TO TRUE
+                       EXIT PERFORM
                    NOT AT END
-                       IF USER-COUNT < 5
-                           ADD 1 TO USER-COUNT
-                           MOVE SECRET-USERNAME TO
-                               USER-USERNAME(USER-COUNT)
-                           MOVE SECRET-PASSWORD TO
-                               USER-PASSWORD(USER-COUNT)
-                       END-IF
+                       ADD 1 TO USER-COUNT
+                       MOVE SECRETS-RECORD TO USER-TABLE(I)
                END-READ
            END-PERFORM.
            CLOSE SECRETS-FILE.
