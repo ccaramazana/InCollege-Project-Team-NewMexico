@@ -362,21 +362,34 @@
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
       
-               IF INPUT-CHOICE-BUF = "1" OR INPUT-CHOICE-BUF = "2"
+               IF INPUT-CHOICE-BUF = "1"
+                   PERFORM CREATE-PROFILE-PROCEDURE
+               END-IF
+
+               IF INPUT-CHOICE-BUF = "2"
+                   PERFORM VIEW-PROFILE-PROCEDURE
+               END-IF
+
+               IF INPUT-CHOICE-BUF = "3" OR INPUT-CHOICE-BUF = "4"
                    MOVE "Under construction." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
-               IF INPUT-CHOICE-BUF = "3"
+
+               IF INPUT-CHOICE-BUF = "5"
                    PERFORM SKILLS-MENU-PROCEDURE
                END-IF
-               IF INPUT-CHOICE-BUF = "4"
+
+               IF INPUT-CHOICE-BUF = "6"
                    SET EXIT-MENU TO TRUE
                END-IF
+               
            END-PERFORM.
 
        SKILLS-MENU-PROCEDURE.
+
            MOVE "N" TO MENU-EXIT-FLAG.
            PERFORM UNTIL EXIT-SKILLS-MENU
+
                MOVE "1) Advanced COBOL" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) JCL Management" TO TO-OUTPUT-BUF
@@ -391,6 +404,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
+
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
@@ -399,9 +413,11 @@
                    MOVE "This skill is under construction." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
+
                IF INPUT-CHOICE-BUF = "6"
                    SET EXIT-SKILLS-MENU TO TRUE
                END-IF
+
            END-PERFORM.
 
        CREATE-PROFILE-PROCEDURE.
