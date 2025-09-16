@@ -433,6 +433,20 @@
                MOVE INPUT-RECORD TO USER-FIRST-NAME(LOGGED-IN-RANK)
            END-PERFORM.
 
+           PERFORM IF NOT EXIT-PROFILE-CREATION
+               MOVE "Enter Last Name:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES 
+                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+                   MOVE "Invalid Last Name" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   EXIT PERFORM
+               END-IF
+               MOVE INPUT-RECORD TO USER-LAST-NAME(LOGGED-IN-RANK)
+           END-PERFORM.
+
        VIEW-PROFILE-PROCEDURE.
            MOVE "TBD" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
