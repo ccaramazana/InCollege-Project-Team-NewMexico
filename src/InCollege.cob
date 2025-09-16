@@ -413,7 +413,7 @@
 
        CREATE-PROFILE-PROCEDURE.
 
-           MOVE "--Create/Edit Profile--" TO TO-OUTPUT-BUF.
+           MOVE "--- Create/Edit Profile ---" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE "N" TO PROFILE-CREATION-FAILURE-FLAG.
@@ -518,7 +518,14 @@
            END-IF.
 
        VIEW-PROFILE-PROCEDURE.
-           MOVE "TBD" TO TO-OUTPUT-BUF.
+           MOVE "--- Your Profile ---" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+           STRING "Name: " DELIMITED BY SIZE  
+               USER-FIRST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE 
+               " " DELIMITED BY SIZE
+               USER-LAST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE 
+               INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
        DISPLAY-AND-WRITE-OUTPUT.
