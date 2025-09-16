@@ -75,8 +75,6 @@
                    15 EDU-YEARS PIC X(80).
 
        01  USER-COUNT             PIC 9 VALUE 0.
-       01  WS-EOF-FLAG            PIC A(1) VALUE 'N'.
-           88 END-OF-SECRETS-FILE VALUE 'Y'.
 
        01  VALIDATION-VARS.
            05 PASSWORD-IS-VALID   PIC A(1).
@@ -138,7 +136,6 @@
            OPEN INPUT SECRETS-FILE.
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
-           MOVE "N" TO WS-EOF-FLAG.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > 5
                READ SECRETS-FILE
                    AT END
