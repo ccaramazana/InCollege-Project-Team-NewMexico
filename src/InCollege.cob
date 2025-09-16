@@ -455,8 +455,7 @@
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES 
                    MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
-                   MOVE "Invalid University/College attended" TO
-                   TO-OUTPUT-BUF
+                   MOVE "Invalid University/College attended" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
                END-IF
@@ -471,13 +470,37 @@
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES 
                    MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
-                   MOVE "Invalid Major" TO
-                   TO-OUTPUT-BUF
+                   MOVE "Invalid Major" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
                END-IF
                MOVE INPUT-RECORD TO USER-MAJOR(LOGGED-IN-RANK)
            END-PERFORM.
+
+           PERFORM IF NOT EXIT-PROFILE-CREATION
+
+               MOVE "Enter Graduation Year:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+
+               IF INPUT-RECORD = SPACES 
+                   OR FUNCTION TRIM(INPUT-RECORD) IS NOT NUMERIC 
+                   OR FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) NOT = 4
+
+                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+                   MOVE "Invalid Graduation Year" TO
+                   TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   EXIT PERFORM
+
+               END-IF
+
+               MOVE INPUT-RECORD TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
+
+           END-PERFORM.
+
        VIEW-PROFILE-PROCEDURE.
            MOVE "TBD" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
