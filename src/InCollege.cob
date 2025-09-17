@@ -591,6 +591,35 @@
 
            END-PERFORM.
 
+           PERFORM VARYING EDU-SUBS FROM 1 BY 1 UNTIL EDU-SUBS > 3
+
+               IF EDU-DEGREE(LOGGED-IN-RANK, EDU-SUBS) NOT = SPACES
+
+                   MOVE "Education:" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   STRING "Degree: " DELIMITED BY SIZE  
+                       EDU-DEGREE(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING "University: " DELIMITED BY SIZE  
+                       EDU-UNIVERSITY(LOGGED-IN-RANK, EDU-SUBS)
+                       DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING "Dates: " DELIMITED BY SIZE  
+                       EXP-DATES(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               END-IF
+
+           END-PERFORM.
+
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY TO-OUTPUT-BUF.
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
