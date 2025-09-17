@@ -19,9 +19,9 @@
 
        FILE SECTION.
        FD  INPUT-FILE.
-       01  INPUT-RECORD PIC X(80).
+       01  INPUT-RECORD PIC X(256).
        FD  OUTPUT-FILE.
-       01  OUTPUT-RECORD PIC X(80).
+       01  OUTPUT-RECORD PIC X(256).
        FD  SECRETS-FILE.
        01  SECRETS-RECORD.
            05 SECRET-USERNAME PIC X(20).
@@ -33,12 +33,12 @@
            05 PROFILE-UNIVERSITY PIC X(80).
            05 PROFILE-MAJOR PIC X(80).
            05 PROFILE-GRADUATION-YEAR PIC 9(4).
-           05 PROFILE-ABOUT-ME PIC X(80).
+           05 PROFILE-ABOUT-ME PIC X(200).
            05 PROFILE-EXPERIENCES OCCURS 3 TIMES.
                10 PROF-EXP-TITLE PIC X(80).
                10 PROF-EXP-COMPANY PIC X(80).
                10 PROF-EXP-DATES PIC X(80).
-               10 PROF-EXP-DESCRIPTION PIC X(80).
+               10 PROF-EXP-DESCRIPTION PIC X(100).
            05 PROFILE-EDUCATION OCCURS 3 TIMES.
                10 PROF-EDU-DEGREE PIC X(80).
                10 PROF-EDU-UNIVERSITY PIC X(80).
@@ -62,7 +62,7 @@
            05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
                88 EXIT-PROGRAM VALUE 'Y'.
 
-       01  TO-OUTPUT-BUF PIC X(80).
+       01  TO-OUTPUT-BUF PIC X(256).
        01  INPUT-CHOICE-BUF PIC X(1).
 
        01  USER-RECORDS.
@@ -77,12 +77,12 @@
                10 USER-UNIVERSITY PIC X(80).
                10 USER-MAJOR PIC X(80).
                10 USER-GRADUATION-YEAR PIC 9(4).
-               10 USER-ABOUT-ME PIC X(80).
+               10 USER-ABOUT-ME PIC X(200).
                10 USER-EXPERIENCES OCCURS 3 TIMES.
                    15 EXP-TITLE PIC X(80).
                    15 EXP-COMPANY PIC X(80).
                    15 EXP-DATES PIC X(80).
-                   15 EXP-DESCRIPTION PIC X(80).
+                   15 EXP-DESCRIPTION PIC X(100).
                10 USER-EDUCATION OCCURS 3 TIMES.
                    15 EDU-DEGREE PIC X(80).
                    15 EDU-UNIVERSITY PIC X(80).
@@ -113,6 +113,9 @@
            05 LOGGED-IN-RANK PIC 9.
            05 LOGIN-FOUND-FLAG PIC A(1).
               88 LOGIN-SUCCESSFUL VALUE 'Y'.
+
+       01  GRAD-YEAR-FLAG PIC X VALUE 'N'.
+           88 GRAD-YEAR-SUCESSFUL VALUE 'Y'.
 
        01  MENU-EXIT-FLAG PIC A(1).
            88 EXIT-MENU VALUE 'Y'.
@@ -527,28 +530,25 @@
            END-PERFORM
            MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-MAJOR(LOGGED-IN-RANK)
 
-           PERFORM WITH TEST AFTER
-                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
-               MOVE "Enter Graduation Year:" TO TO-OUTPUT-BUF
+           MOVE 'N' TO GRAD-YEAR-FLAG
+           PERFORM WITH TEST AFTER UNTIL GRAD-YEAR-SUCESSFUL
+               MOVE "Enter Graduation Year (YYYY):" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
 
-               IF INPUT-RECORD = SPACES
-                   OR FUNCTION TRIM(INPUT-RECORD) IS NOT NUMERIC
-                   OR FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) NOT = 4
-
-                   MOVE "Invalid Graduation Year" TO
-                   TO-OUTPUT-BUF
+               IF FUNCTION TRIM(INPUT-RECORD) IS NUMERIC
+                   AND FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 4 AND INPUT-RECORD NOT = SPACES
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
+                   SET GRAD-YEAR-SUCESSFUL TO TRUE
+               ELSE
+                   MOVE "Invalid Graduation Year" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
-
                END-IF
            END-PERFORM.
-           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
 
-           MOVE "Enter About Me (Optional):" TO TO-OUTPUT-BUF
+           MOVE "Enter About Me (Optional, max 200 characters, enter blank line to skip):" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
            PERFORM READ-INPUT-SAFELY
            IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
@@ -563,6 +563,9 @@
            PERFORM SAVE-PROFILES-TO-FILE
            PERFORM EDIT-EDUCATION-PROCEDURE
            PERFORM SAVE-PROFILES-TO-FILE
+
+           MOVE "Profile saved successfully!" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
            .
 *> Function used to view profile
        VIEW-PROFILE-PROCEDURE.
@@ -571,9 +574,9 @@
 
            MOVE SPACES TO TO-OUTPUT-BUF.
            STRING "Name: " DELIMITED BY SIZE
-               USER-FIRST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE
+               FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE
                " " DELIMITED BY SIZE
-               USER-LAST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE
+               FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
@@ -589,10 +592,12 @@
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "Graduation Year: " DELIMITED BY SIZE
-               USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
-               INTO TO-OUTPUT-BUF.
+           MOVE "Graduation Year: " TO TO-OUTPUT-BUF.
+           IF USER-GRADUATION-YEAR(LOGGED-IN-RANK) NOT = 0
+               STRING "Graduation Year: " DELIMITED BY SIZE
+                   USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
+                   INTO TO-OUTPUT-BUF
+           END-IF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
 *> Checks if there was any input for About Me, if no then don't print
@@ -747,7 +752,7 @@
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EXP-DATES(LOGGED-IN-RANK, J)
 
-               MOVE "  Description (optional):" TO TO-OUTPUT-BUF
+               MOVE "  Description (optional, max 100 chars, blank to skip):" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
@@ -844,7 +849,7 @@
            EXIT PARAGRAPH.
 
        DISPLAY-AND-WRITE-OUTPUT.
-           DISPLAY TO-OUTPUT-BUF.
+           DISPLAY FUNCTION TRIM(TO-OUTPUT-BUF).
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
            WRITE OUTPUT-RECORD.
 
