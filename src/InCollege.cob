@@ -114,6 +114,9 @@
            05 LOGIN-FOUND-FLAG PIC A(1).
               88 LOGIN-SUCCESSFUL VALUE 'Y'.
 
+       01  GRAD-YEAR-FLAG PIC X VALUE 'N'.
+           88 GRAD-YEAR-SUCESSFUL VALUE 'Y'.
+
        01  MENU-EXIT-FLAG PIC A(1).
            88 EXIT-MENU VALUE 'Y'.
 
@@ -527,26 +530,23 @@
            END-PERFORM
            MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-MAJOR(LOGGED-IN-RANK)
 
-           PERFORM WITH TEST AFTER
-                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+           MOVE 'N' TO GRAD-YEAR-FLAG
+           PERFORM WITH TEST AFTER UNTIL GRAD-YEAR-SUCESSFUL
                MOVE "Enter Graduation Year:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
 
-               IF INPUT-RECORD = SPACES
-                   OR FUNCTION TRIM(INPUT-RECORD) IS NOT NUMERIC
-                   OR FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) NOT = 4
-
-                   MOVE "Invalid Graduation Year" TO
-                   TO-OUTPUT-BUF
+               IF FUNCTION TRIM(INPUT-RECORD) IS NUMERIC
+                   AND FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 4 AND INPUT-RECORD NOT = SPACES
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
+                   SET GRAD-YEAR-SUCESSFUL TO TRUE
+               ELSE
+                   MOVE "Invalid Graduation Year" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
-
                END-IF
            END-PERFORM.
-           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
 
            MOVE "Enter About Me (Optional):" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -563,6 +563,9 @@
            PERFORM SAVE-PROFILES-TO-FILE
            PERFORM EDIT-EDUCATION-PROCEDURE
            PERFORM SAVE-PROFILES-TO-FILE
+
+           MOVE "Profile saved successfully!" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
            .
 *> Function used to view profile
        VIEW-PROFILE-PROCEDURE.
@@ -571,9 +574,9 @@
 
            MOVE SPACES TO TO-OUTPUT-BUF.
            STRING "Name: " DELIMITED BY SIZE
-               FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE 
+               FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE
                " " DELIMITED BY SIZE
-               FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE 
+               FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) DELIMITED BY SIZE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
@@ -589,12 +592,10 @@
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE "Graduation Year: " TO TO-OUTPUT-BUF.
-           IF USER-GRADUATION-YEAR(LOGGED-IN-RANK) NOT = 0
-               STRING "Graduation Year: " DELIMITED BY SIZE
-                   USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
-                   INTO TO-OUTPUT-BUF
-           END-IF.
+           MOVE SPACES TO TO-OUTPUT-BUF.
+           STRING "Graduation Year: " DELIMITED BY SIZE
+               USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
+               INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
 *> Checks if there was any input for About Me, if no then don't print
