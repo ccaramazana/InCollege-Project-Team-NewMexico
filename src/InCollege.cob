@@ -107,8 +107,6 @@
 
        01  TEMP-PASSWORD PIC X(80).
 
-       01  CHAR-ORD PIC 9(3).
-
        01  LOGIN-VARS.
            05 LOGIN-USERNAME PIC X(20).
            05 LOGIN-PASSWORD PIC X(12).
@@ -343,20 +341,19 @@
            IF PASS-LEN < 8 OR PASS-LEN > 12
                SET IS-NOT-VALID TO TRUE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > PASS-LEN
-              MOVE FUNCTION ORD(TEMP-PASSWORD(I:1)) TO CHAR-ORD
 
-              IF CHAR-ORD >= 65 AND CHAR-ORD <= 90
+              IF TEMP-PASSWORD(I:1) >= "A" AND TEMP-PASSWORD(I:1) <= "Z"
                    ADD 1 TO CAPS-COUNT
               END-IF
 
-              IF CHAR-ORD >= 48 AND CHAR-ORD <= 57
+              IF TEMP-PASSWORD(I:1) >= "0"AND TEMP-PASSWORD(I:1) <= "9"
                    ADD 1 TO DIGIT-COUNT
               END-IF
 
-              IF (CHAR-ORD >= 33 AND CHAR-ORD <= 47) OR
-                 (CHAR-ORD >= 58 AND CHAR-ORD <= 64) OR
-                 (CHAR-ORD >= 91 AND CHAR-ORD <= 96) OR
-                 (CHAR-ORD >= 123 AND CHAR-ORD <= 126)
+              IF (TEMP-PASSWORD(I:1) >= "!") AND (TEMP-PASSWORD(I:1) <= "/") OR
+                 (TEMP-PASSWORD(I:1) >= ":") AND (TEMP-PASSWORD(I:1) <= "@") OR
+                 (TEMP-PASSWORD(I:1) >= "[") AND (TEMP-PASSWORD(I:1) <= "`") OR
+                 (TEMP-PASSWORD(I:1) >= "{") AND (TEMP-PASSWORD(I:1) <= "~")
                    ADD 1 TO SPECIAL-COUNT
               END-IF
 
