@@ -627,6 +627,104 @@
 
            END-PERFORM.
 
+
+       EDIT-EXPERIENCES-PROCEDURE.
+           PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
+               MOVE SPACES TO EXP-TITLE      (LOGGED-IN-RANK, J)
+               MOVE SPACES TO EXP-COMPANY    (LOGGED-IN-RANK, J)
+               MOVE SPACES TO EXP-DATES      (LOGGED-IN-RANK, J)
+               MOVE SPACES TO EXP-DESCRIPTION(LOGGED-IN-RANK, J)
+           END-PERFORM.
+
+           MOVE 0 TO COUNT-EXP.
+
+           PERFORM UNTIL COUNT-EXP = 3
+               MOVE "Add a work experience? (Y/N):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF FUNCTION UPPER-CASE(INPUT-RECORD(1:1)) NOT = "Y"
+                   EXIT PERFORM
+               END-IF
+
+               ADD 1 TO COUNT-EXP
+               MOVE COUNT-EXP TO J
+
+               MOVE "  Title:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EXP-TITLE(LOGGED-IN-RANK, J)
+
+               MOVE "  Company:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EXP-COMPANY(LOGGED-IN-RANK, J)
+
+               MOVE "  Dates (e.g., 2023–2024):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EXP-DATES(LOGGED-IN-RANK, J)
+
+               MOVE "  Description:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EXP-DESCRIPTION(LOGGED-IN-RANK, J)
+           END-PERFORM.
+           EXIT PARAGRAPH.
+
+
+       EDIT-EDUCATION-PROCEDURE.
+           PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
+               MOVE SPACES TO EDU-DEGREE    (LOGGED-IN-RANK, J)
+               MOVE SPACES TO EDU-UNIVERSITY(LOGGED-IN-RANK, J)
+               MOVE SPACES TO EDU-YEARS     (LOGGED-IN-RANK, J)
+           END-PERFORM.
+
+           MOVE 0 TO COUNT-EDU.
+
+           PERFORM UNTIL COUNT-EDU = 3
+               MOVE "Add an education entry? (Y/N):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF FUNCTION UPPER-CASE(INPUT-RECORD(1:1)) NOT = "Y"
+                   EXIT PERFORM
+               END-IF
+
+               ADD 1 TO COUNT-EDU
+               MOVE COUNT-EDU TO J
+
+               MOVE "  Degree (e.g., B.S. Computer Engineering):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EDU-DEGREE(LOGGED-IN-RANK, J)
+
+               MOVE "  University:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EDU-UNIVERSITY(LOGGED-IN-RANK, J)
+
+               MOVE "  Years (e.g., 2021–2025):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                    TO EDU-YEARS(LOGGED-IN-RANK, J)
+           END-PERFORM.
+           EXIT PARAGRAPH.
+
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY TO-OUTPUT-BUF.
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
