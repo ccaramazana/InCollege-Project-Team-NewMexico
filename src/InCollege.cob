@@ -589,10 +589,12 @@
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "Graduation Year: " DELIMITED BY SIZE
-               USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
-               INTO TO-OUTPUT-BUF.
+           MOVE "Graduation Year: " TO TO-OUTPUT-BUF.
+           IF USER-GRADUATION-YEAR(LOGGED-IN-RANK) NOT = 0
+               STRING "Graduation Year: " DELIMITED BY SIZE
+                   USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
+                   INTO TO-OUTPUT-BUF
+           END-IF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
 *> Checks if there was any input for About Me, if no then don't print
