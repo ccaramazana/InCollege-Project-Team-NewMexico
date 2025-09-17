@@ -555,6 +555,41 @@
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
+           PERFORM VARYING EXP-SUBS FROM 1 BY 1 UNTIL EXP-SUBS > 3
+
+               IF EXP-TITLE(LOGGED-IN-RANK, EXP-SUBS) NOT = SPACES
+
+                   MOVE "Experience:" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   STRING "Title: " DELIMITED BY SIZE  
+                       EXP-TITLE(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING "Company: " DELIMITED BY SIZE  
+                       EXP-COMPANY(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING "Dates: " DELIMITED BY SIZE  
+                       EXP-DATES(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING "Description: " DELIMITED BY SIZE  
+                       EXP-DESCRIPTION(LOGGED-IN-RANK, EXP-SUBS)
+                       DELIMITED BY SPACE
+                       INTO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               END-IF
+
+           END-PERFORM.
+
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY TO-OUTPUT-BUF.
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
