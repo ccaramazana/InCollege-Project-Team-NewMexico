@@ -507,7 +507,6 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
                    MOVE "Empty About Me" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    MOVE SPACES to USER-ABOUT-ME(LOGGED-IN-RANK)
