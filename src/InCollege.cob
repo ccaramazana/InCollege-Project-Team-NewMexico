@@ -171,9 +171,14 @@
            MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF.
 
            IF INPUT-CHOICE-BUF = "1"
-               PERFORM LOGIN-PROCEDURE.
+               PERFORM LOGIN-PROCEDURE
+           END-IF.
            IF INPUT-CHOICE-BUF = "2"
-               PERFORM SIGN-UP-PROCEDURE.
+               PERFORM SIGN-UP-PROCEDURE
+           END-IF.
+           IF INPUT-CHOICE-BUF NOT = "1" AND INPUT-CHOICE-BUF NOT = "2"
+               PERFORM INITIAL-PROMPT-PROCEDURE
+           END-IF.
 
        LOGIN-PROCEDURE.
 
