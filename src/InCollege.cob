@@ -9,9 +9,11 @@
            SELECT OUTPUT-FILE ASSIGN TO "output.txt"
                ORGANIZATION IS LINE SEQUENTIAL.
            SELECT SECRETS-FILE ASSIGN TO "secrets.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS SEC-STATUS.
            SELECT PROFILES-FILE ASSIGN TO "profiles.txt"
-               ORGANIZATION IS LINE SEQUENTIAL.
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS PRO-STATUS.
 
        DATA DIVISION.
 
@@ -43,6 +45,18 @@
                10 PROF-EDU-YEARS PIC X(80).
 
        WORKING-STORAGE SECTION.
+
+       01 YEARS-INPUT            PIC X(20).
+       01 YEARS-LEN              PIC 99.
+       01 YEARS-SEP              PIC X(1).
+       01 YEAR-START             PIC 9(4).
+       01 YEAR-END               PIC 9(4).
+       01 YEARS-VALID-FLAG       PIC X VALUE 'N'.
+          88 YEARS-VALID         VALUE 'Y'.
+          88 YEARS-INVALID       VALUE 'N'.
+
+       01 SEC-STATUS   PIC XX VALUE SPACES.
+       01 PRO-STATUS   PIC XX VALUE SPACES.
 
        01 PROGRAM-STATUS.
            05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
@@ -93,6 +107,8 @@
 
        01  TEMP-PASSWORD PIC X(80).
 
+       01  CHAR-ORD PIC 9(3).
+
        01  LOGIN-VARS.
            05 LOGIN-USERNAME PIC X(20).
            05 LOGIN-PASSWORD PIC X(12).
@@ -133,10 +149,21 @@
            CLOSE OUTPUT-FILE.
            STOP RUN.
 
+*> Loads users from file to read
        LOAD-USERS-FROM-FILE.
-           OPEN INPUT SECRETS-FILE.
+
            INITIALIZE USER-RECORDS.
            MOVE 0 TO USER-COUNT.
+
+           OPEN INPUT SECRETS-FILE.
+
+           IF SEC-STATUS = "35"
+               OPEN OUTPUT SECRETS-FILE
+               CLOSE SECRETS-FILE
+               OPEN INPUT SECRETS-FILE
+               MOVE "00" TO SEC-STATUS
+           END-IF
+
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > 5
                READ SECRETS-FILE
                    AT END
@@ -148,18 +175,29 @@
            END-PERFORM.
            CLOSE SECRETS-FILE.
 
+*> Loading Profiles from File to read
        LOAD-PROFILES-FROM-FILE.
-           OPEN INPUT PROFILES-FILE.
            INITIALIZE USER-PROFILES.
+
+           OPEN INPUT PROFILES-FILE.
+           IF PRO-STATUS = "35"
+               OPEN OUTPUT PROFILES-FILE
+               CLOSE PROFILES-FILE
+               OPEN INPUT PROFILES-FILE
+               MOVE "00" TO PRO-STATUS
+           END-IF
+
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
                READ PROFILES-FILE
-                   AT END EXIT PERFORM 
+                   AT END EXIT PERFORM
                    NOT AT END
                        MOVE PROFILES-RECORD TO USER-PROFILES-TABLE(I)
                END-READ
            END-PERFORM
            CLOSE PROFILES-FILE.
 
+
+*> Prompts user the inital menu choice
        INITIAL-PROMPT-PROCEDURE.
 
            MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
@@ -224,7 +262,7 @@
                PERFORM INITIAL-PROMPT-PROCEDURE
 
            END-IF.
-
+*> Performs Username and Password Checks
        SIGN-UP-PROCEDURE.
 
            IF USER-COUNT >= 5
@@ -287,6 +325,7 @@
 
            END-IF.
 
+*> Makes sure the username is unique
        CHECK-USERNAME-EXISTS.
            SET USERNAME-DOESNT-EXIST TO TRUE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -296,6 +335,7 @@
                END-IF
            END-PERFORM.
 
+*> Checks password to make sure it fits all the requirements
        VALIDATE-PASSWORD-PROCEDURE.
            SET IS-VALID TO TRUE.
            INITIALIZE CAPS-COUNT, DIGIT-COUNT, SPECIAL-COUNT.
@@ -303,28 +343,29 @@
            IF PASS-LEN < 8 OR PASS-LEN > 12
                SET IS-NOT-VALID TO TRUE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > PASS-LEN
-              IF TEMP-PASSWORD(I:1) >= "A" AND
-                 TEMP-PASSWORD(I:1) <= "Z"
+              MOVE FUNCTION ORD(TEMP-PASSWORD(I:1)) TO CHAR-ORD
+
+              IF CHAR-ORD >= 65 AND CHAR-ORD <= 90
                    ADD 1 TO CAPS-COUNT
               END-IF
-              IF TEMP-PASSWORD(I:1) >= "0" AND
-                 TEMP-PASSWORD(I:1) <= "9"
+
+              IF CHAR-ORD >= 48 AND CHAR-ORD <= 57
                    ADD 1 TO DIGIT-COUNT
               END-IF
-              IF TEMP-PASSWORD(I:1) = "!" OR
-                 TEMP-PASSWORD(I:1) = "@" OR
-                 TEMP-PASSWORD(I:1) = "#" OR
-                 TEMP-PASSWORD(I:1) = "$" OR
-                 TEMP-PASSWORD(I:1) = "%" OR
-                 TEMP-PASSWORD(I:1) = "^" OR
-                 TEMP-PASSWORD(I:1) = "&" OR
-                 TEMP-PASSWORD(I:1) = "*"
+
+              IF (CHAR-ORD >= 33 AND CHAR-ORD <= 47) OR
+                 (CHAR-ORD >= 58 AND CHAR-ORD <= 64) OR
+                 (CHAR-ORD >= 91 AND CHAR-ORD <= 96) OR
+                 (CHAR-ORD >= 123 AND CHAR-ORD <= 126)
                    ADD 1 TO SPECIAL-COUNT
               END-IF
+
            END-PERFORM.
+
            IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
                SET IS-NOT-VALID TO TRUE.
 
+*> Saves created accounts to file
        SAVE-USERS-TO-FILE.
            OPEN OUTPUT SECRETS-FILE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -334,6 +375,7 @@
            END-PERFORM.
            CLOSE SECRETS-FILE.
 
+*> Saves created profiles to file
        SAVE-PROFILES-TO-FILE.
            OPEN OUTPUT PROFILES-FILE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -342,6 +384,7 @@
            END-PERFORM.
            CLOSE PROFILES-FILE.
 
+*> The menu the user is prompted after a sucessful login
        POST-LOGIN-NAVIGATION.
 
            MOVE "N" TO MENU-EXIT-FLAG.
@@ -389,6 +432,7 @@
 
            END-PERFORM.
 
+*> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
 
            MOVE "N" TO MENU-EXIT-FLAG.
@@ -424,6 +468,8 @@
 
            END-PERFORM.
 
+
+*> Used to create profiles for the user
        CREATE-PROFILE-PROCEDURE.
 
            MOVE "--- Create/Edit Profile ---" TO TO-OUTPUT-BUF.
@@ -431,139 +477,139 @@
 
            MOVE "N" TO PROFILE-CREATION-FAILURE-FLAG.
 
-           PERFORM
+*> All these performs make sure that the users enters a valid input for each field or else it will reprompt them.
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter First Name:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF INPUT-RECORD = SPACES 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+               IF INPUT-RECORD = SPACES
                    MOVE "Invalid First Name" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
                END-IF
-               MOVE INPUT-RECORD TO USER-FIRST-NAME(LOGGED-IN-RANK)
            END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-FIRST-NAME(LOGGED-IN-RANK)
 
-           PERFORM IF NOT EXIT-PROFILE-CREATION
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter Last Name:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF INPUT-RECORD = SPACES 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+               IF INPUT-RECORD = SPACES
                    MOVE "Invalid Last Name" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
                END-IF
-               MOVE INPUT-RECORD TO USER-LAST-NAME(LOGGED-IN-RANK)
            END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-LAST-NAME(LOGGED-IN-RANK)
 
-           PERFORM IF NOT EXIT-PROFILE-CREATION
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter University/College attended:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF INPUT-RECORD = SPACES 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+               IF INPUT-RECORD = SPACES
                    MOVE "Invalid University/College attended" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
                END-IF
-               MOVE INPUT-RECORD TO USER-UNIVERSITY(LOGGED-IN-RANK)
-           END-PERFORM.
-           
-           PERFORM IF NOT EXIT-PROFILE-CREATION
+           END-PERFORM
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-UNIVERSITY(LOGGED-IN-RANK)
+
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter Major:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF INPUT-RECORD = SPACES 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
+               IF INPUT-RECORD = SPACES
                    MOVE "Invalid Major" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   EXIT PERFORM
                END-IF
-               MOVE INPUT-RECORD TO USER-MAJOR(LOGGED-IN-RANK)
-           END-PERFORM.
+           END-PERFORM
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-MAJOR(LOGGED-IN-RANK)
 
-           PERFORM IF NOT EXIT-PROFILE-CREATION
-
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter Graduation Year:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
 
-               IF INPUT-RECORD = SPACES 
-                   OR FUNCTION TRIM(INPUT-RECORD) IS NOT NUMERIC 
+               IF INPUT-RECORD = SPACES
+                   OR FUNCTION TRIM(INPUT-RECORD) IS NOT NUMERIC
                    OR FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) NOT = 4
 
-                   MOVE "Y" TO PROFILE-CREATION-FAILURE-FLAG 
                    MOVE "Invalid Graduation Year" TO
                    TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    EXIT PERFORM
 
                END-IF
-
-               MOVE INPUT-RECORD TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
-
            END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
 
-           PERFORM IF NOT EXIT-PROFILE-CREATION
-               MOVE "Enter About Me (Optional):" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
-                   MOVE SPACES to USER-ABOUT-ME(LOGGED-IN-RANK)
-                   EXIT PERFORM
-               END-IF
-               MOVE INPUT-RECORD TO USER-ABOUT-ME(LOGGED-IN-RANK)
-           END-PERFORM.
+           MOVE "Enter About Me (Optional):" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           PERFORM READ-INPUT-SAFELY
+           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+           IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+               MOVE SPACES to USER-ABOUT-ME(LOGGED-IN-RANK)
+           ELSE
+               MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-ABOUT-ME(LOGGED-IN-RANK)
+           END-IF
 
-           IF NOT EXIT-PROFILE-CREATION
-               PERFORM SAVE-PROFILES-TO-FILE
-               PERFORM EDIT-EDUCATION-PROCEDURE
-               PERFORM SAVE-PROFILES-TO-FILE
-           END-IF.
-
+           PERFORM SAVE-PROFILES-TO-FILE
+           PERFORM EDIT-EXPERIENCES-PROCEDURE
+           PERFORM SAVE-PROFILES-TO-FILE
+           PERFORM EDIT-EDUCATION-PROCEDURE
+           PERFORM SAVE-PROFILES-TO-FILE
+           .
+*> Function used to view profile
        VIEW-PROFILE-PROCEDURE.
            MOVE "--- Your Profile ---" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "Name: " DELIMITED BY SIZE  
-               USER-FIRST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE 
+           STRING "Name: " DELIMITED BY SIZE
+               USER-FIRST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE
                " " DELIMITED BY SIZE
-               USER-LAST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE 
+               USER-LAST-NAME(LOGGED-IN-RANK) DELIMITED BY SPACE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "University: " DELIMITED BY SIZE  
-               USER-UNIVERSITY(LOGGED-IN-RANK) DELIMITED BY SPACE 
+           STRING "University: " DELIMITED BY SIZE
+               USER-UNIVERSITY(LOGGED-IN-RANK) DELIMITED BY SIZE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "Major: " DELIMITED BY SIZE  
-               USER-MAJOR(LOGGED-IN-RANK) DELIMITED BY SPACE 
+           STRING "Major: " DELIMITED BY SIZE
+               USER-MAJOR(LOGGED-IN-RANK) DELIMITED BY SIZE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "Graduation Year: " DELIMITED BY SIZE  
+           STRING "Graduation Year: " DELIMITED BY SIZE
                USER-GRADUATION-YEAR(LOGGED-IN-RANK) DELIMITED BY SPACE
                INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE SPACES TO TO-OUTPUT-BUF.
-           STRING "About Me: " DELIMITED BY SIZE  
-               FUNCTION TRIM(USER-ABOUT-ME(LOGGED-IN-RANK)) DELIMITED BY SIZE 
-               INTO TO-OUTPUT-BUF.
-           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+*> Checks if there was any input for About Me, if no then don't print
+
+           IF FUNCTION LENGTH(FUNCTION TRIM(USER-ABOUT-ME(LOGGED-IN-RANK))) > 0
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING "About Me: " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-ABOUT-ME(LOGGED-IN-RANK)) DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF
+
+
+*> Prints out all experiences
 
            PERFORM VARYING EXP-SUBS FROM 1 BY 1 UNTIL EXP-SUBS > 3
 
@@ -572,33 +618,35 @@
                    MOVE "Experience:" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-                   STRING "Title: " DELIMITED BY SIZE  
-                       EXP-TITLE(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                   STRING "    Title: " DELIMITED BY SIZE
+                       EXP-TITLE(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                    MOVE SPACES TO TO-OUTPUT-BUF
-                   STRING "Company: " DELIMITED BY SIZE  
-                       EXP-COMPANY(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                   STRING "    Company: " DELIMITED BY SIZE
+                       EXP-COMPANY(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                    MOVE SPACES TO TO-OUTPUT-BUF
-                   STRING "Dates: " DELIMITED BY SIZE  
-                       EXP-DATES(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SPACE
+                   STRING "    Dates: " DELIMITED BY SIZE
+                       EXP-DATES(LOGGED-IN-RANK, EXP-SUBS) DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                    MOVE SPACES TO TO-OUTPUT-BUF
-                   STRING "Description: " DELIMITED BY SIZE  
+                   STRING "    Description: " DELIMITED BY SIZE
                        EXP-DESCRIPTION(LOGGED-IN-RANK, EXP-SUBS)
-                       DELIMITED BY SPACE
+                       DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                END-IF
 
            END-PERFORM.
+
+*> Prints out all educations
 
            PERFORM VARYING EDU-SUBS FROM 1 BY 1 UNTIL EDU-SUBS > 3
 
@@ -607,29 +655,31 @@
                    MOVE "Education:" TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-                   STRING "Degree: " DELIMITED BY SIZE  
-                       EDU-DEGREE(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SPACE
+                   STRING "    Degree: " DELIMITED BY SIZE
+                       EDU-DEGREE(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                    MOVE SPACES TO TO-OUTPUT-BUF
-                   STRING "University: " DELIMITED BY SIZE  
+                   STRING "    University: " DELIMITED BY SIZE
                        EDU-UNIVERSITY(LOGGED-IN-RANK, EDU-SUBS)
-                       DELIMITED BY SPACE
+                       DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
 
                    MOVE SPACES TO TO-OUTPUT-BUF
-                   STRING "Dates: " DELIMITED BY SIZE  
-                       EXP-DATES(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SPACE
+                   STRING "    Years: " DELIMITED BY SIZE
+                       EDU-YEARS(LOGGED-IN-RANK, EDU-SUBS) DELIMITED BY SIZE
                        INTO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-
                END-IF
 
            END-PERFORM.
 
+           MOVE "--------------------" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
+*> Function used to create and edit experiences
        EDIT-EXPERIENCES-PROCEDURE.
            PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
                MOVE SPACES TO EXP-TITLE      (LOGGED-IN-RANK, J)
@@ -652,37 +702,68 @@
                ADD 1 TO COUNT-EXP
                MOVE COUNT-EXP TO J
 
-               MOVE "  Title:" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+*> All these perform until asks the user to input a valid input or else it reprompts
+
+               PERFORM WITH TEST AFTER
+                       UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+                   MOVE "  Title (required):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+                   IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                       MOVE "  Title cannot be blank." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EXP-TITLE(LOGGED-IN-RANK, J)
 
-               MOVE "  Company:" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               PERFORM WITH TEST AFTER
+                       UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+                   MOVE "  Company (required):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+                   IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                       MOVE "  Company cannot be blank." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EXP-COMPANY(LOGGED-IN-RANK, J)
 
-               MOVE "  Dates (e.g., 2023–2024):" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+
+               PERFORM WITH TEST AFTER
+                       UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+                   MOVE "  Dates (required, e.g., Summer 2024):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+                   IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                       MOVE "  Dates cannot be blank." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EXP-DATES(LOGGED-IN-RANK, J)
 
-               MOVE "  Description:" TO TO-OUTPUT-BUF
+               MOVE "  Description (optional):" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               MOVE FUNCTION TRIM(INPUT-RECORD)
-                    TO EXP-DESCRIPTION(LOGGED-IN-RANK, J)
+               IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                   MOVE SPACES TO EXP-DESCRIPTION(LOGGED-IN-RANK, J)
+               ELSE
+                   MOVE FUNCTION TRIM(INPUT-RECORD)
+                       TO EXP-DESCRIPTION(LOGGED-IN-RANK, J)
+               END-IF
            END-PERFORM.
            EXIT PARAGRAPH.
 
-
+*> Function used to create and edit education
        EDIT-EDUCATION-PROCEDURE.
            PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
                MOVE SPACES TO EDU-DEGREE    (LOGGED-IN-RANK, J)
@@ -704,26 +785,64 @@
                ADD 1 TO COUNT-EDU
                MOVE COUNT-EDU TO J
 
-               MOVE "  Degree (e.g., B.S. Computer Engineering):" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+*> All these perform until asks the user to input a valid input or else it reprompts
+
+                PERFORM WITH TEST AFTER
+                       UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+                   MOVE "  Degree (e.g., B.S. Computer Engineering):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+                   IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                       MOVE "  Degree cannot be blank." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EDU-DEGREE(LOGGED-IN-RANK, J)
 
-               MOVE "  University:" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               PERFORM WITH TEST AFTER
+                       UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+                   MOVE "  University:" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+                   IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
+                       MOVE "  University cannot be blank." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
                MOVE FUNCTION TRIM(INPUT-RECORD)
                     TO EDU-UNIVERSITY(LOGGED-IN-RANK, J)
 
-               MOVE "  Years (e.g., 2021–2025):" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               PERFORM READ-INPUT-SAFELY
-               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               MOVE FUNCTION TRIM(INPUT-RECORD)
-                    TO EDU-YEARS(LOGGED-IN-RANK, J)
+               MOVE 'N' TO YEARS-VALID-FLAG
+               PERFORM WITH TEST AFTER UNTIL YEARS-VALID
+                   MOVE "  Years (e.g., 2021–2025):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   PERFORM READ-INPUT-SAFELY
+                   IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO YEARS-INPUT
+                   MOVE FUNCTION LENGTH(FUNCTION TRIM(YEARS-INPUT)) TO YEARS-LEN
+
+                   IF (YEARS-LEN = 9) AND (YEARS-INPUT(1:4) IS NUMERIC) AND (YEARS-INPUT(6:4) IS NUMERIC) AND (YEARS-INPUT(5:1) = "-")
+                           MOVE YEARS-INPUT(1:4) TO YEAR-START
+                           MOVE YEARS-INPUT(6:4) TO YEAR-END
+                       IF YEAR-START <= YEAR-END
+                           SET YEARS-VALID TO TRUE
+                       END-IF
+                    END-IF
+
+                    IF YEARS-INVALID
+                       MOVE "  Please enter years as YYYY-YYYY(e.g, 2021-2025)." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+               END-PERFORM
+
+               MOVE YEARS-INPUT TO EDU-YEARS(LOGGED-IN-RANK, J)
+
            END-PERFORM.
            EXIT PARAGRAPH.
 
