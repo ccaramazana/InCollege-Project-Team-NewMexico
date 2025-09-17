@@ -86,6 +86,11 @@
            05 SPECIAL-COUNT PIC 99.
            05 I PIC 99.
 
+       01 LOOP-VARS.
+           05 J PIC 99 VALUE 0.
+           05 COUNT-EXP PIC 9 VALUE 0.
+           05 COUNT-EDU PIC 9 VALUE 0.
+
        01  TEMP-PASSWORD PIC X(80).
 
        01  LOGIN-VARS.
