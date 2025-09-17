@@ -506,7 +506,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-               IF INPUT-RECORD = SPACES 
+               IF FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) = 0
                    MOVE SPACES to USER-ABOUT-ME(LOGGED-IN-RANK)
                    EXIT PERFORM
                END-IF
