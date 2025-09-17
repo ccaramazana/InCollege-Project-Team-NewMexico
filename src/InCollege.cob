@@ -111,6 +111,7 @@
            88 EXIT-PROFILE-CREATION VALUE 'Y'.
 
        01 EXP-SUBS PIC 9.
+       01 EDU-SUBS PIC 9.
 
        PROCEDURE DIVISION.
 
