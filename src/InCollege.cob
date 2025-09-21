@@ -135,6 +135,13 @@
        01 EXP-SUBS PIC 9.
        01 EDU-SUBS PIC 9.
 
+       01 SEARCH-NAME        PIC X(160).  *> User input name to search
+       01 FULL-NAME           PIC X(160).  *> Concatenated first + last name
+       01 END-OF-PROFILES     PIC 9 VALUE 0.  *> End-of-file flag for profiles
+
+
+
+
        PROCEDURE DIVISION.
 
        MAIN-PROCEDURE.
@@ -409,29 +416,30 @@
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
 
-               IF INPUT-CHOICE-BUF = "1"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "1"
                    PERFORM CREATE-PROFILE-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "2"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "2"
                    PERFORM VIEW-PROFILE-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "3"
-                   MOVE "Under construction." TO TO-OUTPUT-BUF
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "3"
+                   MOVE "Under construction." TO TO-OUTPUT-BUF 
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   
                END-IF
 
-               IF INPUT-CHOICE-BUF = "4"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "4"
                    PERFORM FIND-SOMEONE-PROCEDURE
                END-IF
 
 
-               IF INPUT-CHOICE-BUF = "5"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "5"
                    PERFORM SKILLS-MENU-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "6"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "6"
                    SET EXIT-MENU TO TRUE
                END-IF
 
@@ -439,73 +447,32 @@
 
 
 *> finding someone by Search
-        FIND-SOMEONE-PROCEDURE
-            MOVE "Enter the full name of the person you are looking for:" 
-                TO TO-OUTPUT-BUF
-            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-            PERFORM READ-INPUT-SAFELY
-            MOVE INPUT-RECORD TO SEARCH-NAME
+        FIND-SOMEONE-PROCEDURE.
+            DISPLAY "Enter name to search (First Last): "
+            ACCEPT SEARCH-NAME
 
             OPEN INPUT PROFILES-FILE
-            MOVE "N" TO PROFILE-FOUND-FLAG
-            MOVE 0   TO END-OF-FILE
-
-            PERFORM UNTIL END-OF-FILE = 1
+            PERFORM UNTIL END-OF-PROFILES = 1
                 READ PROFILES-FILE
-                    AT END MOVE 1 TO END-OF-FILE
+                    AT END
+                        MOVE 1 TO END-OF-PROFILES
                     NOT AT END
-                        IF SEARCH-NAME = PROFILE-NAME
-                            MOVE "--- Found User Profile ---" TO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+                        *> Concatenate first and last name
+                        STRING PROFILE-FIRST-NAME DELIMITED BY SPACE
+                            " " DELIMITED BY SIZE
+                            PROFILE-LAST-NAME DELIMITED BY SPACE
+                            INTO FULL-NAME
+                        END-STRING
 
-                            MOVE "Name: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-NAME DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "University: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-UNIVERSITY DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "Major: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-MAJOR DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "Graduation Year: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-GRAD-YEAR DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "About Me: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-ABOUT DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "Experience: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-EXPERIENCE DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "Education: " TO TO-OUTPUT-BUF
-                            STRING PROFILE-EDUCATION DELIMITED BY SIZE
-                                INTO TO-OUTPUT-BUF
-                            PERFORM DISPLAY-AND-WRITE-OUTPUT
-
-                            MOVE "Y" TO PROFILE-FOUND-FLAG
-                            MOVE 1 TO END-OF-FILE
+                        IF SEARCH-NAME = FULL-NAME
+                            DISPLAY "Found user: " FULL-NAME
+                            *> You can exit if you want only the first match
+                            MOVE 1 TO END-OF-PROFILES
                         END-IF
                 END-READ
             END-PERFORM
-
-            IF PROFILE-FOUND-FLAG = "N"
-                MOVE "No one by that name could be found" TO TO-OUTPUT-BUF
-                PERFORM DISPLAY-AND-WRITE-OUTPUT
-            END-IF
-
             CLOSE PROFILES-FILE.
+
 
 
 
