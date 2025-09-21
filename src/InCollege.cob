@@ -132,12 +132,22 @@
        01 PROFILE-CREATION-FAILURE-FLAG PIC A(1).
            88 EXIT-PROFILE-CREATION VALUE 'Y'.
 
-       01 EXP-SUBS PIC 9.
-       01 EDU-SUBS PIC 9.
+       01 EXP-SUBS         PIC 9(2) VALUE 0.
+       01 EDU-SUBS         PIC 9(2) VALUE 0.
 
-       01 SEARCH-NAME        PIC X(160).  *> User input name to search
-       01 FULL-NAME           PIC X(160).  *> Concatenated first + last name
-       01 END-OF-PROFILES     PIC 9 VALUE 0.  *> End-of-file flag for profiles
+       
+        01  FILE-STATUS-FLAG       PIC X VALUE "N".
+            88 END-OF-FILE         VALUE "Y".
+            88 NOT-END-OF-FILE     VALUE "N".
+
+        01  FULL-NAME              PIC X(50).
+        01  SEARCH-NAME            PIC X(50).   *> input search value
+        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
+
+
+
+       
+       
 
 
 
@@ -447,33 +457,49 @@
 
 
 *> finding someone by Search
-        FIND-SOMEONE-PROCEDURE.
-            DISPLAY "Enter name to search (First Last): "
-            ACCEPT SEARCH-NAME
+    *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
+       FIND-SOMEONE-PROCEDURE.
+           MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           PERFORM READ-INPUT-SAFELY
+           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
 
-            OPEN INPUT PROFILES-FILE
-            PERFORM UNTIL END-OF-PROFILES = 1
-                READ PROFILES-FILE
-                    AT END
-                        MOVE 1 TO END-OF-PROFILES
-                    NOT AT END
-                        *> Concatenate first and last name
-                        STRING PROFILE-FIRST-NAME DELIMITED BY SPACE
-                            " " DELIMITED BY SIZE
-                            PROFILE-LAST-NAME DELIMITED BY SPACE
-                            INTO FULL-NAME
-                        END-STRING
+           MOVE 0 TO PROFILE-INDEX
 
-                        IF SEARCH-NAME = FULL-NAME
-                            DISPLAY "Found user: " FULL-NAME
-                            *> You can exit if you want only the first match
-                            MOVE 1 TO END-OF-PROFILES
-                        END-IF
-                END-READ
-            END-PERFORM
-            CLOSE PROFILES-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+               
+               STRING 
+                   FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
+                   " " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-LAST-NAME(I)) DELIMITED BY SIZE
+                   INTO FULL-NAME
+               END-STRING
 
+               IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
+                   *> Save current logged-in user
+                   MOVE LOGGED-IN-RANK TO PROFILE-INDEX
+                   *> Temporarily set to found user
+                   MOVE I TO LOGGED-IN-RANK
+                   
+                   MOVE "***** USER PROFILE *****" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   
+                   PERFORM VIEW-PROFILE-PROCEDURE
+                   
+                   *> Restore original logged-in user
+                   MOVE PROFILE-INDEX TO LOGGED-IN-RANK
+                   EXIT PERFORM *> Stop after first match
+               END-IF
+           END-PERFORM
 
+           *> If we didn't find anyone (PROFILE-INDEX will still be 0)
+           IF PROFILE-INDEX = 0
+               MOVE "No user found with that name." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF.
+
+    
 
 
 *> Skils menu after selecting the skills option
