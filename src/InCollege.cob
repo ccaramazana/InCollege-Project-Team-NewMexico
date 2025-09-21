@@ -417,10 +417,15 @@
                    PERFORM VIEW-PROFILE-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "3" OR INPUT-CHOICE-BUF = "4"
+               IF INPUT-CHOICE-BUF = "3"
                    MOVE "Under construction." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
+
+               IF INPUT-CHOICE-BUF = "4"
+                   PERFORM FIND-SOMEONE-PROCEDURE
+               END-IF
+
 
                IF INPUT-CHOICE-BUF = "5"
                    PERFORM SKILLS-MENU-PROCEDURE
@@ -431,6 +436,78 @@
                END-IF
 
            END-PERFORM.
+
+
+*> finding someone by Search
+        FIND-SOMEONE-PROCEDURE
+            MOVE "Enter the full name of the person you are looking for:" 
+                TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+            PERFORM READ-INPUT-SAFELY
+            MOVE INPUT-RECORD TO SEARCH-NAME
+
+            OPEN INPUT PROFILES-FILE
+            MOVE "N" TO PROFILE-FOUND-FLAG
+            MOVE 0   TO END-OF-FILE
+
+            PERFORM UNTIL END-OF-FILE = 1
+                READ PROFILES-FILE
+                    AT END MOVE 1 TO END-OF-FILE
+                    NOT AT END
+                        IF SEARCH-NAME = PROFILE-NAME
+                            MOVE "--- Found User Profile ---" TO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Name: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-NAME DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "University: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-UNIVERSITY DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Major: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-MAJOR DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Graduation Year: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-GRAD-YEAR DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "About Me: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-ABOUT DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Experience: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-EXPERIENCE DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Education: " TO TO-OUTPUT-BUF
+                            STRING PROFILE-EDUCATION DELIMITED BY SIZE
+                                INTO TO-OUTPUT-BUF
+                            PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                            MOVE "Y" TO PROFILE-FOUND-FLAG
+                            MOVE 1 TO END-OF-FILE
+                        END-IF
+                END-READ
+            END-PERFORM
+
+            IF PROFILE-FOUND-FLAG = "N"
+                MOVE "No one by that name could be found" TO TO-OUTPUT-BUF
+                PERFORM DISPLAY-AND-WRITE-OUTPUT
+            END-IF
+
+            CLOSE PROFILES-FILE.
+
+
 
 *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
