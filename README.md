@@ -45,3 +45,8 @@ Examples of tests are located in `testing/tests`.
 Example usage:
 
 `[user@hostname:directory]$ python testing/main.py testing/tests/1`
+
+The code is recompiled before each test. If you wish to disable this, use the
+`--no-compile` flag. For instance,
+
+`[user@hostname:directory]$ python testing/main.py testing/tests/1 --no-compile`
