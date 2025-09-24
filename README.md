@@ -37,7 +37,7 @@ To create a test, create a folder. You must put inside that folder a file named
 `input.txt`, which will be the input used for the test. You can also put files
 named `profiles.txt` and `secrets.txt` inside that folder, and those will
 override the `testing/secrets.base.txt` and `testing/profiles.base.txt`
-templates during testing.
+templates during testing, but you don't have to.
 
 Then, run `[user@hostname:directory]$ python testing/main.py
 /path/to/your/test/folder/here` to test. You can view the output in a
