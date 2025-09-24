@@ -22,8 +22,8 @@ Create four files in the root of the repo.
 
 - `profiles.txt`
 
-Then `[user@hostname:directory]$ ./InCollege` to run the program with the given
-input.
+Compile, then `[user@hostname:directory]$ ./InCollege` to run the program with
+the given input.
 
 ## For testing
 
