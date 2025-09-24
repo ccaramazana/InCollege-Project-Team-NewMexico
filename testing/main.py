@@ -16,6 +16,7 @@ INPUT_FILE = PROJECT_ROOT / "input.txt"
 OUTPUT_FILE = PROJECT_ROOT / "output.txt"
 SECRETS_FILE = PROJECT_ROOT / "secrets.txt"
 PROFILES_FILE = PROJECT_ROOT / "profiles.txt"
+COBOL_SOURCE_FILE = PROJECT_ROOT / "src" / "InCollege.cob"
 
 # Default paths for CLI options and base files.
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
@@ -29,13 +30,45 @@ app = typer.Typer(
     pretty_exceptions_enable=False
 )
 
+def compile_cobol_program():
+    """Compiles the COBOL source code into an executable."""
+    print("... compiling COBOL source ...")
+    
+    if not COBOL_SOURCE_FILE.exists():
+        typer.secho(f"❌ ERROR: COBOL source file not found at '{COBOL_SOURCE_FILE}'", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    try:
+        # Command to compile the COBOL source file.
+        command = ["cobc", "-x", "-free", str(COBOL_SOURCE_FILE.relative_to(PROJECT_ROOT))]
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            cwd=PROJECT_ROOT  # Run the command from the project root.
+        )
+
+        # Check if the compilation was successful.
+        if result.returncode != 0:
+            typer.secho("❌ ERROR: COBOL compilation failed.", fg=typer.colors.RED)
+            typer.secho(f"--- Compiler Output (STDERR) ---\n{result.stderr}", fg=typer.colors.YELLOW)
+            raise typer.Exit(code=1)
+        
+        print("  - Compilation successful.")
+
+    except FileNotFoundError:
+        typer.secho("❌ ERROR: 'cobc' command not found. Is GnuCOBOL installed and in your PATH?", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    except Exception as e:
+        typer.secho(f"❌ An unexpected error occurred during compilation: {e}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
 def prepare_test_files(test_case_dir: Path):
     """
     Sets up the test environment based on a specific test case directory.
     - Clears the output file.
     - Copies input.txt from the test case directory.
-    - Copies secrets.txt and profiles.txt from the test case directory if they exist,
-      otherwise uses the base files.
+    - Copies secrets.txt and profiles.txt if they exist, otherwise uses base files.
     """
     print("...  preparing test environment ...")
 
@@ -66,7 +99,6 @@ def prepare_test_files(test_case_dir: Path):
     # 4. Handle mandatory input.txt.
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
-        # This is a fatal error for a test case.
         typer.secho(f"ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
         raise typer.Exit(code=1)
     shutil.copy(test_input_file, INPUT_FILE)
@@ -84,16 +116,31 @@ def run(
         help="Path to the compiled COBOL executable file.",
         exists=True, file_okay=True
     )] = DEFAULT_EXECUTABLE,
+    no_compile: Annotated[bool, typer.Option(
+        "--no-compile",
+        help="Skip the compilation step and use the existing executable."
+    )] = False,
 ):
     """Run a single test case from a directory against the COBOL application."""
     print(f"--- Starting test: {test_case_dir.name} ---")
+    # --- 1. COMPILE PHASE ---
+    if not no_compile:
+        try:
+            compile_cobol_program()
+        except typer.Exit as e:
+            # The compile function already prints the error, so just re-raise to exit.
+            raise e
+    else:
+        print("... skipping compilation step ...")
 
+    # --- 2. SETUP PHASE ---
     try:
         prepare_test_files(test_case_dir)
     except Exception as e:
         typer.secho(f"ERROR during setup: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
+    # --- 3. EXECUTION PHASE ---
     print(f"... executing '{cobol_executable}' ...\n")
     if not os.access(cobol_executable, os.X_OK):
         typer.secho(f"ERROR: Executable '{cobol_executable}' is not executable.", fg=typer.colors.RED)
@@ -102,13 +149,9 @@ def run(
 
     print("--- PROGRAM OUTPUT (STDOUT) ---")
     try:
-        # Use 'cwd' to run the executable from the project root.
         result = subprocess.run(
             [os.path.abspath(cobol_executable)],
-            capture_output=True,
-            text=True,
-            check=True,
-            cwd=PROJECT_ROOT
+            capture_output=True, text=True, check=True, cwd=PROJECT_ROOT
         )
         print(result.stdout)
         print("--- END PROGRAM OUTPUT ---")
@@ -121,12 +164,10 @@ def run(
         typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    # --- NEW: Post-Execution Step ---
+    # --- 4. TEARDOWN / RESULTS PHASE ---
     print("\n... execution finished ...")
     try:
-        # Define the destination for the output file inside the test case directory.
         test_output_dest = test_case_dir / "output.txt"
-        # Copy the generated output.txt from the root to the test case directory.
         shutil.copy(OUTPUT_FILE, test_output_dest)
         print(f"... copied result to {test_output_dest} ...")
     except Exception as e:
