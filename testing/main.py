@@ -8,7 +8,6 @@ from typing_extensions import Annotated
 
 # --- Configuration ---
 # Dynamically determine the project root directory based on this script's location.
-# This makes the script runnable from anywhere, as long as it's inside the 'testing' folder.
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
 
@@ -18,7 +17,7 @@ OUTPUT_FILE = PROJECT_ROOT / "output.txt"
 SECRETS_FILE = PROJECT_ROOT / "secrets.txt"
 PROFILES_FILE = PROJECT_ROOT / "profiles.txt"
 
-# Default paths for CLI options, also constructed absolutely.
+# Default paths for CLI options and base files.
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
 DEFAULT_SECRETS_BASE = SCRIPT_DIR / "secrets.base.txt"
 DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
@@ -27,64 +26,70 @@ DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
 app = typer.Typer(
     help="A command-line test runner for the InCollege COBOL application.",
     add_completion=False,
-    pretty_exceptions_enable=False # Disables Typer's own error handling to show our custom messages
+    pretty_exceptions_enable=False
 )
 
-def reset_test_environment(
-    secrets_base: Path,
-    profiles_base: Path,
-):
-    """Sets up the environment for a clean test run."""
-    print("...  resetting test environment ...")
+def prepare_test_files(test_case_dir: Path):
+    """
+    Sets up the test environment based on a specific test case directory.
+    - Clears the output file.
+    - Copies input.txt from the test case directory.
+    - Copies secrets.txt and profiles.txt from the test case directory if they exist,
+      otherwise uses the base files.
+    """
+    print("...  preparing test environment ...")
 
+    # 1. Clear the output file for a clean run.
     if OUTPUT_FILE.exists():
         OUTPUT_FILE.unlink()
     OUTPUT_FILE.touch()
     print(f"  - Cleared {OUTPUT_FILE}")
 
-    if secrets_base.exists():
-        shutil.copy(secrets_base, SECRETS_FILE)
-        print(f"  - Reset {SECRETS_FILE} from {secrets_base}")
+    # 2. Handle secrets.txt: Use test-specific file or fall back to base.
+    test_secrets_file = test_case_dir / "secrets.txt"
+    if test_secrets_file.exists():
+        shutil.copy(test_secrets_file, SECRETS_FILE)
+        print(f"  - Using test-specific secrets from: {test_secrets_file}")
     else:
-        SECRETS_FILE.touch()
-        print(f"  - Created empty {SECRETS_FILE} (base file not found)")
+        shutil.copy(DEFAULT_SECRETS_BASE, SECRETS_FILE)
+        print(f"  - Using base secrets from: {DEFAULT_SECRETS_BASE}")
 
-    if profiles_base.exists():
-        shutil.copy(profiles_base, PROFILES_FILE)
-        print(f"  - Reset {PROFILES_FILE} from {profiles_base}")
+    # 3. Handle profiles.txt: Use test-specific file or fall back to base.
+    test_profiles_file = test_case_dir / "profiles.txt"
+    if test_profiles_file.exists():
+        shutil.copy(test_profiles_file, PROFILES_FILE)
+        print(f"  - Using test-specific profiles from: {test_profiles_file}")
     else:
-        PROFILES_FILE.touch()
-        print(f"  - Created empty {PROFILES_FILE} (base file not found)")
+        shutil.copy(DEFAULT_PROFILES_BASE, PROFILES_FILE)
+        print(f"  - Using base profiles from: {DEFAULT_PROFILES_BASE}")
+
+    # 4. Handle mandatory input.txt.
+    test_input_file = test_case_dir / "input.txt"
+    if not test_input_file.exists():
+        # This is a fatal error for a test case.
+        typer.secho(f"❌ ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+    shutil.copy(test_input_file, INPUT_FILE)
+    print(f"  - Copied test input from: {test_input_file}")
+
 
 @app.command()
 def run(
-    test_input_file: Annotated[Path, typer.Argument(
-        exists=True, file_okay=True, dir_okay=False, readable=True,
-        help="Path to the test input file (e.g., tests/i1.txt)."
+    test_case_dir: Annotated[Path, typer.Argument(
+        exists=True, file_okay=False, dir_okay=True, readable=True,
+        help="Path to the directory containing the test case files."
     )],
     cobol_executable: Annotated[Path, typer.Option(
         "--executable", "-e",
         help="Path to the compiled COBOL executable file.",
         exists=True, file_okay=True
     )] = DEFAULT_EXECUTABLE,
-    secrets_base_file: Annotated[Path, typer.Option(
-        "--secrets", "-s",
-        help="Path to the base secrets file for resetting accounts.",
-        exists=True
-    )] = DEFAULT_SECRETS_BASE,
-    profiles_base_file: Annotated[Path, typer.Option(
-        "--profiles", "-p",
-        help="Path to the base profiles file for resetting profiles.",
-        exists=True
-    )] = DEFAULT_PROFILES_BASE,
 ):
-    """Run a single test case against the COBOL application."""
-    print(f"--- 🚀 Starting test: {test_input_file.name} 🚀 ---")
+    """Run a single test case from a directory against the COBOL application."""
+    print(f"--- 🚀 Starting test: {test_case_dir.name} 🚀 ---")
 
     try:
-        reset_test_environment(secrets_base_file, profiles_base_file)
-        shutil.copy(test_input_file, INPUT_FILE)
-        print(f"... copied {test_input_file} to {INPUT_FILE} for test run ...")
+        prepare_test_files(test_case_dir)
     except Exception as e:
         typer.secho(f"❌ ERROR during setup: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
@@ -97,8 +102,7 @@ def run(
 
     print("--- PROGRAM OUTPUT (STDOUT) ---")
     try:
-        # **CRITICAL FIX**: Use 'cwd' to run the executable from the project root.
-        # This ensures the COBOL program can find "input.txt", "output.txt", etc.
+        # Use 'cwd' to run the executable from the project root.
         result = subprocess.run(
             [os.path.abspath(cobol_executable)],
             capture_output=True,
@@ -108,9 +112,7 @@ def run(
         )
         print(result.stdout)
         print("--- END PROGRAM OUTPUT ---")
-    except FileNotFoundError:
-        typer.secho(f"❌ ERROR: Executable not found at '{cobol_executable}'. Please compile it first.", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+
     except subprocess.CalledProcessError as e:
         typer.secho(f"❌ ERROR: The COBOL program exited with an error (code {e.returncode}).", fg=typer.colors.RED)
         typer.secho(f"--- STDERR ---\n{e.stderr}", fg=typer.colors.YELLOW)
@@ -120,9 +122,10 @@ def run(
         raise typer.Exit(code=1)
 
     print("\n... execution finished ...")
-    typer.secho(f"✅ Test '{test_input_file.name}' completed successfully.", fg=typer.colors.GREEN)
+    typer.secho(f"✅ Test '{test_case_dir.name}' completed successfully.", fg=typer.colors.GREEN)
     print(f"Check '{OUTPUT_FILE}' for the captured program output.")
     print("--------------------------------------------------")
+
 
 if __name__ == "__main__":
     app()
