@@ -122,7 +122,7 @@ def run(
         raise typer.Exit(code=1)
 
     print("\n... execution finished ...")
-    typer.secho(f"✅ Test '{test_case_dir.name}' completed successfully.", fg=typer.colors.GREEN)
+    typer.secho(f"Test '{test_case_dir.name}' completed successfully.", fg=typer.colors.GREEN)
     print(f"Check '{OUTPUT_FILE}' for the captured program output.")
     print("--------------------------------------------------")
 
