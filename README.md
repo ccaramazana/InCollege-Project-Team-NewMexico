@@ -41,3 +41,7 @@ Then, run `[user@hostname:directory]$ python testing/main.py
 `output.txt` file that is created in the test dir.
 
 Examples of tests are located in `testing/tests`.
+
+Example usage:
+
+`[user@hostname:directory]$ python testing/main.py testing/tests/1`
