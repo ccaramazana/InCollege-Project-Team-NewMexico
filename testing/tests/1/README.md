@@ -1,1 +1,3 @@
-This this demonstrates scrum 68.
+This is a simple positive test case.
+
+Login, search, success, quit.

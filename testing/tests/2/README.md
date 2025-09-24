@@ -1,1 +1,3 @@
-This is a negative test case.
+This is a simple negative test case.
+
+Login, search, fail, quit.
