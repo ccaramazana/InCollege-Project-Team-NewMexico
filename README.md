@@ -27,6 +27,9 @@ input.
 
 ## For testing
 
+Make sure to have [`typer`](https://typer.tiangolo.com/) installed locally on
+your Python environment.
+
 `testing/secrets.base.txt` and `testing/profiles.base.txt` are the template
 files used for `secrets.txt` and `profiles.txt` during testing.
 
