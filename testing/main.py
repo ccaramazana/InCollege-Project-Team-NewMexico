@@ -67,7 +67,7 @@ def prepare_test_files(test_case_dir: Path):
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
         # This is a fatal error for a test case.
-        typer.secho(f"❌ ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
+        typer.secho(f"ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
         raise typer.Exit(code=1)
     shutil.copy(test_input_file, INPUT_FILE)
     print(f"  - Copied test input from: {test_input_file}")
@@ -86,18 +86,18 @@ def run(
     )] = DEFAULT_EXECUTABLE,
 ):
     """Run a single test case from a directory against the COBOL application."""
-    print(f"--- 🚀 Starting test: {test_case_dir.name} 🚀 ---")
+    print(f"--- Starting test: {test_case_dir.name} ---")
 
     try:
         prepare_test_files(test_case_dir)
     except Exception as e:
-        typer.secho(f"❌ ERROR during setup: {e}", fg=typer.colors.RED)
+        typer.secho(f"ERROR during setup: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     print(f"... executing '{cobol_executable}' ...\n")
     if not os.access(cobol_executable, os.X_OK):
-        typer.secho(f"❌ ERROR: Executable '{cobol_executable}' is not executable.", fg=typer.colors.RED)
-        typer.secho(f"💡 Try running: chmod +x {cobol_executable}", fg=typer.colors.YELLOW)
+        typer.secho(f"ERROR: Executable '{cobol_executable}' is not executable.", fg=typer.colors.RED)
+        typer.secho(f"Try running: chmod +x {cobol_executable}", fg=typer.colors.YELLOW)
         raise typer.Exit(code=1)
 
     print("--- PROGRAM OUTPUT (STDOUT) ---")
@@ -114,11 +114,11 @@ def run(
         print("--- END PROGRAM OUTPUT ---")
 
     except subprocess.CalledProcessError as e:
-        typer.secho(f"❌ ERROR: The COBOL program exited with an error (code {e.returncode}).", fg=typer.colors.RED)
+        typer.secho(f"ERROR: The COBOL program exited with an error (code {e.returncode}).", fg=typer.colors.RED)
         typer.secho(f"--- STDERR ---\n{e.stderr}", fg=typer.colors.YELLOW)
         raise typer.Exit(code=1)
     except Exception as e:
-        typer.secho(f"❌ An unexpected error occurred: {e}", fg=typer.colors.RED)
+        typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     print("\n... execution finished ...")
