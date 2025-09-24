@@ -468,6 +468,8 @@
            MOVE 0 TO PROFILE-INDEX
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+
+               MOVE SPACES TO FULL-NAME
                
                STRING 
                    FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
