@@ -1,0 +1,29 @@
+1
+kalyan
+P@ssw0rd
+1
+Kalyan
+Castro de Oliveira
+USF
+Computer Science
+2026
+About Me
+Y
+Title1
+Company
+Dates
+Description
+N
+Y
+Degree1
+USF
+2022-2026
+Y
+Degree2
+USF
+2022-2026
+N
+2
+4
+Eric Chen
+6
