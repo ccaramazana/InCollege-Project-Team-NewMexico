@@ -132,8 +132,25 @@
        01 PROFILE-CREATION-FAILURE-FLAG PIC A(1).
            88 EXIT-PROFILE-CREATION VALUE 'Y'.
 
-       01 EXP-SUBS PIC 9.
-       01 EDU-SUBS PIC 9.
+       01 EXP-SUBS         PIC 9(2) VALUE 0.
+       01 EDU-SUBS         PIC 9(2) VALUE 0.
+
+       
+        01  FILE-STATUS-FLAG       PIC X VALUE "N".
+            88 END-OF-FILE         VALUE "Y".
+            88 NOT-END-OF-FILE     VALUE "N".
+
+        01  FULL-NAME              PIC X(50).
+        01  SEARCH-NAME            PIC X(50).   *> input search value
+        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
+
+
+
+       
+       
+
+
+
 
        PROCEDURE DIVISION.
 
@@ -409,28 +426,83 @@
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
 
-               IF INPUT-CHOICE-BUF = "1"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "1"
                    PERFORM CREATE-PROFILE-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "2"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "2"
                    PERFORM VIEW-PROFILE-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "3" OR INPUT-CHOICE-BUF = "4"
-                   MOVE "Under construction." TO TO-OUTPUT-BUF
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "3"
+                   MOVE "Under construction." TO TO-OUTPUT-BUF 
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   
                END-IF
 
-               IF INPUT-CHOICE-BUF = "5"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "4"
+                   PERFORM FIND-SOMEONE-PROCEDURE
+               END-IF
+
+
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "5"
                    PERFORM SKILLS-MENU-PROCEDURE
                END-IF
 
-               IF INPUT-CHOICE-BUF = "6"
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "6"
                    SET EXIT-MENU TO TRUE
                END-IF
 
            END-PERFORM.
+
+
+*> finding someone by Search
+    *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
+       FIND-SOMEONE-PROCEDURE.
+           MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           PERFORM READ-INPUT-SAFELY
+           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+           MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
+
+           MOVE 0 TO PROFILE-INDEX
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+
+               MOVE SPACES TO FULL-NAME
+               
+               STRING 
+                   FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
+                   " " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-LAST-NAME(I)) DELIMITED BY SIZE
+                   INTO FULL-NAME
+               END-STRING
+
+               IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
+                   *> Save current logged-in user
+                   MOVE LOGGED-IN-RANK TO PROFILE-INDEX
+                   *> Temporarily set to found user
+                   MOVE I TO LOGGED-IN-RANK
+                   
+                   MOVE "***** USER PROFILE *****" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   
+                   PERFORM VIEW-PROFILE-PROCEDURE
+                   
+                   *> Restore original logged-in user
+                   MOVE PROFILE-INDEX TO LOGGED-IN-RANK
+                   EXIT PERFORM *> Stop after first match
+               END-IF
+           END-PERFORM
+
+           *> If we didn't find anyone (PROFILE-INDEX will still be 0)
+           IF PROFILE-INDEX = 0
+               MOVE "No user found with that name." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF.
+
+    
+
 
 *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
