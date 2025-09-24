@@ -135,7 +135,7 @@
        01 EXP-SUBS         PIC 9(2) VALUE 0.
        01 EDU-SUBS         PIC 9(2) VALUE 0.
 
-       
+
         01  FILE-STATUS-FLAG       PIC X VALUE "N".
             88 END-OF-FILE         VALUE "Y".
             88 NOT-END-OF-FILE     VALUE "N".
@@ -149,8 +149,8 @@
 
 
 
-       
-       
+
+
 
 
 
@@ -413,7 +413,6 @@
                MOVE "1) Create/Edit My Profile" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) View My Profile" TO TO-OUTPUT-BUF
-               MOVE "--- Your Profile ---" TO PROFILE-HEADING
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "3) Search for a job" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -435,13 +434,15 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "2"
+                   MOVE "--- Your Profile ---" TO PROFILE-HEADING
                    PERFORM VIEW-PROFILE-PROCEDURE
+
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "3"
-                   MOVE "Under construction." TO TO-OUTPUT-BUF 
+                   MOVE "Under construction." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   
+
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "4"
@@ -474,8 +475,8 @@
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
 
                MOVE SPACES TO FULL-NAME
-               
-               STRING 
+
+               STRING
                    FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
                    " " DELIMITED BY SIZE
                    FUNCTION TRIM(USER-LAST-NAME(I)) DELIMITED BY SIZE
@@ -487,12 +488,11 @@
                    MOVE LOGGED-IN-RANK TO PROFILE-INDEX
                    *> Temporarily set to found user
                    MOVE I TO LOGGED-IN-RANK
-                   
+
                    MOVE "--- Found User Profile ---" TO PROFILE-HEADING
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   
+
                    PERFORM VIEW-PROFILE-PROCEDURE
-                   
+
                    *> Restore original logged-in user
                    MOVE PROFILE-INDEX TO LOGGED-IN-RANK
                    EXIT PERFORM *> Stop after first match
@@ -505,7 +505,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
            END-IF.
 
-    
+
 
 
 *> Skils menu after selecting the skills option
