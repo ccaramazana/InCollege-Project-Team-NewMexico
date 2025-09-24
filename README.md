@@ -37,6 +37,7 @@ override the `testing/secrets.base.txt` and `testing/profiles.base.txt`
 templates during testing.
 
 Then, run `[user@hostname:directory]$ python testing/main.py
-/path/to/your/test/folder/here` to test.
+/path/to/your/test/folder/here` to test. You can view the output in a
+`output.txt` file that is created in the test dir.
 
 Examples of tests are located in `testing/tests`.
