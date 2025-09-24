@@ -3,3 +3,5 @@ input.txt
 output.txt
 secrets.txt
 profiles.txt
+testing/secrets.base.txt
+testing/profiles.base.txt
