@@ -6,27 +6,37 @@ other.
 
 # Compiling
 
-`[user@hostname:~]$ cobc -x -free ./src/InCollege.cob`
+`[user@hostname:directory]$ cobc -x -free src/InCollege.cob`
 
 # Usage
 
-Create three files in the root of the repo.
+## For running
 
-- `./secrets.txt`
+Create four files in the root of the repo.
 
-- `./input.txt`
+- `input.txt`
 
-- `./output.txt`
+- `output.txt`
 
-- `./output.txt`
+- `secrets.txt`
 
-How to format your `input.txt`.
+- `profiles.txt`
 
-- 1 for Login or 2 for Create New Account
-- Enter Username
-- Enter Password
-- If created account, enter a choice for inital menu. Else enter input following the menu options
-- If choice is under construction, reprompt nav menu. Else if skills menu, select a valid input for skills. Else if Create/Edit Profile Follow format
-- Every choice if invaid input is detected will require user to keep inputting a valid input before moving to the next part of profile creation
+Then `[user@hostname:directory]$ ./InCollege` to run the program with the given
+input.
 
-Then `[user@hostname:~]$ ./InCollege` to run the program with the given input.
+## For testing
+
+`testing/secrets.base.txt` and `testing/profiles.base.txt` are the template
+files used for `secrets.txt` and `profiles.txt` during testing.
+
+To create a test, create a folder. You must put inside that folder a file named
+`input.txt`, which will be the input used for the test. You can also put files
+named `profiles.txt` and `secrets.txt` inside that folder, and those will
+override the `testing/secrets.base.txt` and `testing/profiles.base.txt`
+templates during testing.
+
+Then, run `[user@hostname:directory]$ python testing/main.py
+/path/to/your/test/folder/here` to test.
+
+Examples of tests are located in `testing/tests`.
