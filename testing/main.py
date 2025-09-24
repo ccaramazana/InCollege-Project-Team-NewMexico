@@ -121,9 +121,20 @@ def run(
         typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
+    # --- NEW: Post-Execution Step ---
     print("\n... execution finished ...")
+    try:
+        # Define the destination for the output file inside the test case directory.
+        test_output_dest = test_case_dir / "output.txt"
+        # Copy the generated output.txt from the root to the test case directory.
+        shutil.copy(OUTPUT_FILE, test_output_dest)
+        print(f"... copied result to {test_output_dest} ...")
+    except Exception as e:
+        typer.secho(f"WARNING: Could not copy output file to test directory: {e}", fg=typer.colors.YELLOW)
+
+
     typer.secho(f"Test '{test_case_dir.name}' completed successfully.", fg=typer.colors.GREEN)
-    print(f"Check '{OUTPUT_FILE}' for the captured program output.")
+    print(f"Check '{test_case_dir / 'output.txt'}' for the captured program output.")
     print("--------------------------------------------------")
 
 
