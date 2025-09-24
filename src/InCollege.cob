@@ -218,9 +218,9 @@
 *> Prompts user the inital menu choice
        INITIAL-PROMPT-PROCEDURE.
 
-           MOVE "Welcome to InCollege!:" TO TO-OUTPUT-BUF.
+           MOVE "Welcome to InCollege!" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
-           MOVE "1) Log In." TO TO-OUTPUT-BUF.
+           MOVE "1) Log In" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "2) Create New Account" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
@@ -286,7 +286,7 @@
            IF USER-COUNT >= 5
 
                MOVE "All permitted accounts have been created, please" &
-               " come back later" TO TO-OUTPUT-BUF
+               " come back later." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM INITIAL-PROMPT-PROCEDURE
 
@@ -557,7 +557,7 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES
-                   MOVE "Invalid First Name" TO TO-OUTPUT-BUF
+                   MOVE "Invalid First Name." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-PERFORM.
@@ -570,7 +570,7 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES
-                   MOVE "Invalid Last Name" TO TO-OUTPUT-BUF
+                   MOVE "Invalid Last Name." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-PERFORM.
@@ -583,7 +583,7 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES
-                   MOVE "Invalid University/College attended" TO TO-OUTPUT-BUF
+                   MOVE "Invalid University/College attended." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-PERFORM
@@ -596,7 +596,7 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
                IF INPUT-RECORD = SPACES
-                   MOVE "Invalid Major" TO TO-OUTPUT-BUF
+                   MOVE "Invalid Major." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-PERFORM
@@ -615,7 +615,7 @@
                    MOVE FUNCTION TRIM(INPUT-RECORD) TO USER-GRADUATION-YEAR(LOGGED-IN-RANK)
                    SET GRAD-YEAR-SUCESSFUL TO TRUE
                ELSE
-                   MOVE "Invalid Graduation Year" TO TO-OUTPUT-BUF
+                   MOVE "Invalid Graduation Year." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-PERFORM.
