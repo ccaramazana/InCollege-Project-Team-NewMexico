@@ -35,7 +35,7 @@ def compile_cobol_program():
     print("... compiling COBOL source ...")
     
     if not COBOL_SOURCE_FILE.exists():
-        typer.secho(f"❌ ERROR: COBOL source file not found at '{COBOL_SOURCE_FILE}'", fg=typer.colors.RED)
+        typer.secho(f"ERROR: COBOL source file not found at '{COBOL_SOURCE_FILE}'", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     try:
@@ -50,17 +50,17 @@ def compile_cobol_program():
 
         # Check if the compilation was successful.
         if result.returncode != 0:
-            typer.secho("❌ ERROR: COBOL compilation failed.", fg=typer.colors.RED)
+            typer.secho("ERROR: COBOL compilation failed.", fg=typer.colors.RED)
             typer.secho(f"--- Compiler Output (STDERR) ---\n{result.stderr}", fg=typer.colors.YELLOW)
             raise typer.Exit(code=1)
         
         print("  - Compilation successful.")
 
     except FileNotFoundError:
-        typer.secho("❌ ERROR: 'cobc' command not found. Is GnuCOBOL installed and in your PATH?", fg=typer.colors.RED)
+        typer.secho("ERROR: 'cobc' command not found. Is GnuCOBOL installed and in your PATH?", fg=typer.colors.RED)
         raise typer.Exit(code=1)
     except Exception as e:
-        typer.secho(f"❌ An unexpected error occurred during compilation: {e}", fg=typer.colors.RED)
+        typer.secho(f"An unexpected error occurred during compilation: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
 def prepare_test_files(test_case_dir: Path):
