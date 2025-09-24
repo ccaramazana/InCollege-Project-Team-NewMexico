@@ -144,6 +144,9 @@
         01  SEARCH-NAME            PIC X(50).   *> input search value
         01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
+        01 PROFILE-HEADING    PIC X(30).
+
+
 
 
        
@@ -410,6 +413,7 @@
                MOVE "1) Create/Edit My Profile" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) View My Profile" TO TO-OUTPUT-BUF
+               MOVE "--- Your Profile ---" TO PROFILE-HEADING
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "3) Search for a job" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -484,7 +488,7 @@
                    *> Temporarily set to found user
                    MOVE I TO LOGGED-IN-RANK
                    
-                   MOVE "***** USER PROFILE *****" TO TO-OUTPUT-BUF
+                   MOVE "--- Found User Profile ---" TO PROFILE-HEADING
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                    
                    PERFORM VIEW-PROFILE-PROCEDURE
@@ -641,7 +645,7 @@
            .
 *> Function used to view profile
        VIEW-PROFILE-PROCEDURE.
-           MOVE "--- Your Profile ---" TO TO-OUTPUT-BUF.
+           MOVE PROFILE-HEADING TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
            MOVE SPACES TO TO-OUTPUT-BUF.
