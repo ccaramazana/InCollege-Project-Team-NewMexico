@@ -14,6 +14,10 @@
            SELECT PROFILES-FILE ASSIGN TO "profiles.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS PRO-STATUS.
+           SELECT CONNECTIONS-FILE ASSIGN TO "connections.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS CONN-FILE-STATUS.
+
 
        DATA DIVISION.
 
@@ -43,13 +47,14 @@
                10 PROF-EDU-DEGREE PIC X(80).
                10 PROF-EDU-UNIVERSITY PIC X(80).
                10 PROF-EDU-YEARS PIC X(80).
+
        FD CONNECTIONS-FILE.
        01 CONNECTIONS-RECORD.
            05 SENDER-FIRST PIC X(20).
            05 SENDER-LAST PIC X(20).
            05 RECEIVER-FIRST PIC X(20).
            05 RECEIVER-LAST PIC X(20).
-           05 STATUS PIC X(20).
+           05 CONN-STATUS PIC X(20).
 
        WORKING-STORAGE SECTION.
 
@@ -152,6 +157,9 @@
         01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
         01 PROFILE-HEADING    PIC X(30).
+
+        01 CONN-FILE-STATUS   PIC XX VALUE SPACES.
+        01 REQUEST-SUCCESS   PIC X VALUE "N".
 
 
 
@@ -473,68 +481,228 @@
 
            END-PERFORM.
 
+PROFILE-OPTIONS.
+    MOVE "1) Send Connection Request" TO TO-OUTPUT-BUF
+    PERFORM DISPLAY-AND-WRITE-OUTPUT
+    MOVE "2) Back to Main Menu" TO TO-OUTPUT-BUF
+    PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+    PERFORM READ-INPUT-SAFELY
+    IF EXIT-PROGRAM 
+        PERFORM EXIT-EARLY 
+    END-IF
+    MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
+
+    EVALUATE INPUT-CHOICE-BUF
+        WHEN "1"
+            PERFORM SEND-CONNECTION-REQUEST
+            IF REQUEST-SUCCESS = "Y"
+                MOVE "Connection request sent successfully." TO TO-OUTPUT-BUF
+            ELSE
+                MOVE "Error: Could not send connection request." TO TO-OUTPUT-BUF
+            END-IF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            MOVE "Y" TO MENU-EXIT-FLAG   *> return to main menu
+        WHEN "2"
+            MOVE "Y" TO MENU-EXIT-FLAG   *> back to main menu
+        WHEN OTHER
+            MOVE "Invalid choice, try again." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            PERFORM PROFILE-OPTIONS       *> re-show only on invalid
+    END-EVALUATE
+    EXIT.
+
+
+
 
 *> finding someone by Search
     *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
-       FIND-SOMEONE-PROCEDURE.
-           MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
-           PERFORM DISPLAY-AND-WRITE-OUTPUT
-           PERFORM READ-INPUT-SAFELY
-           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
-           MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
+    FIND-SOMEONE-PROCEDURE.
+        MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
+        PERFORM DISPLAY-AND-WRITE-OUTPUT
+        PERFORM READ-INPUT-SAFELY
+        IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+        MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
 
-           MOVE 0 TO PROFILE-INDEX
+        MOVE 0 TO PROFILE-INDEX
 
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+        PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
 
-               MOVE SPACES TO FULL-NAME
+            MOVE SPACES TO FULL-NAME
 
-               STRING
-                   FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
-                   " " DELIMITED BY SIZE
-                   FUNCTION TRIM(USER-LAST-NAME(I)) DELIMITED BY SIZE
-                   INTO FULL-NAME
-               END-STRING
+            STRING
+                FUNCTION TRIM(USER-FIRST-NAME(I)) DELIMITED BY SIZE
+                " " DELIMITED BY SIZE
+                FUNCTION TRIM(USER-LAST-NAME(I)) DELIMITED BY SIZE
+                INTO FULL-NAME
+            END-STRING
 
-               IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
-                   *> Save current logged-in user
-                   MOVE LOGGED-IN-RANK TO PROFILE-INDEX
-                   *> Temporarily set to found user
-                   MOVE I TO LOGGED-IN-RANK
+            IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
+                *> Save the found user's index - DON'T swap LOGGED-IN-RANK
+                MOVE I TO PROFILE-INDEX
 
-                   MOVE "--- Found User Profile ---" TO PROFILE-HEADING
-                   PREFORM VIEW-PROFILE-PROCEDURE
-                   *> After showing profile, offer options
-                   MOVE "1) Send Connection Request" TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   MOVE "2) Back to Main Menu" TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                MOVE "--- Found User Profile ---" TO PROFILE-HEADING
+                PERFORM VIEW-PROFILE-PROCEDURE
+                
+                PERFORM PROFILE-OPTIONS 
 
-                   PREFORM READ-INPUT-SAFELY
-                   MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
+                EXIT PERFORM *> Stop after first match
+            END-IF
+        END-PERFORM
 
-                   
-                   IF INPUT-CHOICE-BUF = "1"
-                        PERFORM SEND-CONNECTION-REQUEST
-                   ELSE
-                        PERFORM POST-LOGIN-NAVIGATION
-                   END-IF
+        *> If we didn't find anyone (PROFILE-INDEX will still be 0)
+        IF PROFILE-INDEX = 0
+            MOVE "No user found with that name." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+        END-IF.
+
+*> Send connection Request
+   
+    SEND-CONNECTION-REQUEST.
+        *> Assume failure until proven success
+        MOVE "N" TO REQUEST-SUCCESS.
+        MOVE "N" TO FILE-STATUS-FLAG.
+
+        *> Try to open connections file for read/write
+        OPEN I-O CONNECTIONS-FILE
+        IF CONN-FILE-STATUS = "35"
+            *> File doesn't exist, create it
+            OPEN OUTPUT CONNECTIONS-FILE
+            CLOSE CONNECTIONS-FILE
+            OPEN I-O CONNECTIONS-FILE
+        END-IF
+
+        IF CONN-FILE-STATUS NOT = "00"
+            MOVE "Unable to open connections file." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            EXIT.
+
+        *> Initialize end-of-file flag
+        SET NOT-END-OF-FILE TO TRUE
+
+        *> Read first record to start loop
+        READ CONNECTIONS-FILE
+            AT END
+                SET END-OF-FILE TO TRUE
+        END-READ
+
+        PERFORM UNTIL END-OF-FILE
+            IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(CONN-STATUS) = "Connected"
+                MOVE "Y" TO FILE-STATUS-FLAG
+                MOVE "Already connected with this user." TO TO-OUTPUT-BUF
+                PERFORM DISPLAY-AND-WRITE-OUTPUT
+                EXIT PERFORM
+            END-IF
+
+            IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(CONN-STATUS) = "Pending"
+                MOVE "Y" TO FILE-STATUS-FLAG
+                MOVE "You have already sent a request to this user." TO TO-OUTPUT-BUF
+                PERFORM DISPLAY-AND-WRITE-OUTPUT
+                EXIT PERFORM
+            END-IF
+
+            IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+             AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+             AND FUNCTION TRIM(CONN-STATUS) = "Pending"
+                MOVE "Y" TO FILE-STATUS-FLAG
+                MOVE "This user has already sent you a request." TO TO-OUTPUT-BUF
+                PERFORM DISPLAY-AND-WRITE-OUTPUT
+                EXIT PERFORM
+            END-IF
+
+            READ CONNECTIONS-FILE
+                AT END
+                    SET END-OF-FILE TO TRUE
+            END-READ
+        END-PERFORM
+
+        *> If no conflicts, create new connection request
+        IF FILE-STATUS-FLAG = "N"
+            MOVE USER-FIRST-NAME(LOGGED-IN-RANK) TO SENDER-FIRST
+            MOVE USER-LAST-NAME(LOGGED-IN-RANK)  TO SENDER-LAST
+            MOVE USER-FIRST-NAME(PROFILE-INDEX)  TO RECEIVER-FIRST
+            MOVE USER-LAST-NAME(PROFILE-INDEX)   TO RECEIVER-LAST
+            MOVE "Pending" TO CONN-STATUS
+
+            WRITE CONNECTIONS-RECORD
+            MOVE "Connection request sent successfully." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            MOVE "Y" TO REQUEST-SUCCESS
+        END-IF
+
+    CLOSE CONNECTIONS-FILE.
 
 
-                   *> Restore original logged-in user
-                   MOVE PROFILE-INDEX TO LOGGED-IN-RANK
-                   EXIT PERFORM *> Stop after first match
-               END-IF
-           END-PERFORM
+*> View pending requests
+    
+    PENDING-REQUESTS-PROCEDURE.
+        MOVE "Pending Connection Requests:" TO TO-OUTPUT-BUF
+        PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-           *> If we didn't find anyone (PROFILE-INDEX will still be 0)
-           IF PROFILE-INDEX = 0
-               MOVE "No user found with that name." TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-           END-IF.
+        *> Initialize flag to track if any requests exist
+        MOVE "N" TO FILE-STATUS-FLAG
 
+        *> Open connections file for input
+        OPEN INPUT CONNECTIONS-FILE
+        IF CONN-FILE-STATUS = "35"
+            *> File doesn't exist, just show no requests message
+            MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            EXIT.
+        
+        IF CONN-FILE-STATUS NOT = "00"
+            MOVE "Unable to open connections file." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+            EXIT.
+        
+        *> Initialize end-of-file flag
+        SET NOT-END-OF-FILE TO TRUE
 
+        *> Read first record to start loop
+        READ CONNECTIONS-FILE
+            AT END
+                SET END-OF-FILE TO TRUE
+        END-READ
 
+        PERFORM UNTIL END-OF-FILE 
+            *> Check if the logged-in user is the receiver and request is pending
+            IF FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
+            AND FUNCTION TRIM(RECEIVER-LAST) = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+            AND FUNCTION TRIM(CONN-STATUS) = "Pending"
+                MOVE "From: " TO TO-OUTPUT-BUF
+                STRING
+                    FUNCTION TRIM(SENDER-FIRST) DELIMITED BY SIZE
+                    " " DELIMITED BY SIZE
+                    FUNCTION TRIM(SENDER-LAST) DELIMITED BY SIZE
+                    INTO TO-OUTPUT-BUF
+                END-STRING
+                PERFORM DISPLAY-AND-WRITE-OUTPUT
+                MOVE "Y" TO FILE-STATUS-FLAG
+            END-IF
+
+            READ CONNECTIONS-FILE
+                AT END
+                    SET END-OF-FILE TO TRUE
+            END-READ
+        END-PERFORM
+
+        *> If no pending requests, display message
+        IF FILE-STATUS-FLAG = "N"
+            MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
+            PERFORM DISPLAY-AND-WRITE-OUTPUT
+        END-IF
+
+        CLOSE CONNECTIONS-FILE.
 
 *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
