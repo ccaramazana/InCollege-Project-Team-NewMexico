@@ -43,6 +43,13 @@
                10 PROF-EDU-DEGREE PIC X(80).
                10 PROF-EDU-UNIVERSITY PIC X(80).
                10 PROF-EDU-YEARS PIC X(80).
+       FD CONNECTIONS-FILE.
+       01 CONNECTIONS-RECORD.
+           05 SENDER-FIRST PIC X(20).
+           05 SENDER-LAST PIC X(20).
+           05 RECEIVER-FIRST PIC X(20).
+           05 RECEIVER-LAST PIC X(20).
+           05 STATUS PIC X(20).
 
        WORKING-STORAGE SECTION.
 
@@ -420,7 +427,9 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "5) Learn a new skill" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "6) Log Out" TO TO-OUTPUT-BUF
+               MOVE "6) View my Pending Connection Requests" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "7) Log Out" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -455,6 +464,10 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "6"
+                   PERFORM PENDING-REQUESTS-PROCEDURE
+               END-IF
+
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "7"
                    SET EXIT-MENU TO TRUE
                END-IF
 
@@ -490,8 +503,23 @@
                    MOVE I TO LOGGED-IN-RANK
 
                    MOVE "--- Found User Profile ---" TO PROFILE-HEADING
+                   PREFORM VIEW-PROFILE-PROCEDURE
+                   *> After showing profile, offer options
+                   MOVE "1) Send Connection Request" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   MOVE "2) Back to Main Menu" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-                   PERFORM VIEW-PROFILE-PROCEDURE
+                   PREFORM READ-INPUT-SAFELY
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
+
+                   
+                   IF INPUT-CHOICE-BUF = "1"
+                        PERFORM SEND-CONNECTION-REQUEST
+                   ELSE
+                        PERFORM POST-LOGIN-NAVIGATION
+                   END-IF
+
 
                    *> Restore original logged-in user
                    MOVE PROFILE-INDEX TO LOGGED-IN-RANK
