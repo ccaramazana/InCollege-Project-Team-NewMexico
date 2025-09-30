@@ -22,6 +22,8 @@ Create four files in the root of the repo.
 
 - `profiles.txt`
 
+- `connections.txt`
+
 Compile, then `[user@hostname:directory]$ ./InCollege` to run the program with
 the given input.
 
