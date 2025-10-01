@@ -32,26 +32,29 @@ the given input.
 Make sure to have [`typer`](https://typer.tiangolo.com/) installed locally on
 your Python environment.
 
-`testing/secrets.base.txt` and `testing/profiles.base.txt` are the template
-files used for `secrets.txt` and `profiles.txt` during testing.
+`testing/secrets.base.txt`, `testing/profiles.base.txt`, and
+`testing/connections.base.txt` are the template files used for `secrets.txt`,
+`profiles.txt`, and `connections.txt` during testing.
 
 To create a test, create a folder. You must put inside that folder a file named
 `input.txt`, which will be the input used for the test. You can also put files
-named `profiles.txt` and `secrets.txt` inside that folder, and those will
-override the `testing/secrets.base.txt` and `testing/profiles.base.txt`
-templates during testing, but you don't have to.
+named `profiles.txt`, `secrets.txt`, and `connections.txt` inside that folder,
+and those will override the `testing/secrets.base.txt`,
+`testing/profiles.base.txt`, and `testing/connections.base.txt` templates during
+testing, but you don't have to.
 
 Then, run `[user@hostname:directory]$ python testing/main.py
 /path/to/your/test/folder/here` to test. You can view the output in a
 `output.txt` file that is created in the test dir.
 
-Examples of tests are located in `testing/tests`.
+Examples of tests are located in `testing/epic#-tests`.
 
 Example usage:
 
-`[user@hostname:directory]$ python testing/main.py testing/tests/1`
+`[user@hostname:directory]$ python testing/main.py testing/epic3-tests/1`
 
 The code is recompiled before each test. If you wish to disable this, use the
 `--no-compile` flag. For instance,
 
-`[user@hostname:directory]$ python testing/main.py testing/tests/1 --no-compile`
+`[user@hostname:directory]$ python testing/main.py testing/epic3-tests/1
+--no-compile`
