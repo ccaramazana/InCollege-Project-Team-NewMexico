@@ -16,12 +16,14 @@ INPUT_FILE = PROJECT_ROOT / "input.txt"
 OUTPUT_FILE = PROJECT_ROOT / "output.txt"
 SECRETS_FILE = PROJECT_ROOT / "secrets.txt"
 PROFILES_FILE = PROJECT_ROOT / "profiles.txt"
+CONNECTIONS_FILE = PROJECT_ROOT / "connections.txt"
 COBOL_SOURCE_FILE = PROJECT_ROOT / "src" / "InCollege.cob"
 
 # Default paths for CLI options and base files.
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
 DEFAULT_SECRETS_BASE = SCRIPT_DIR / "secrets.base.txt"
 DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
+DEFAULT_CONNECTIONS_BASE = SCRIPT_DIR / "connections.base.txt"
 
 # Create the Typer app instance.
 app = typer.Typer(
@@ -96,7 +98,16 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_PROFILES_BASE, PROFILES_FILE)
         print(f"  - Using base profiles from: {DEFAULT_PROFILES_BASE}")
 
-    # 4. Handle mandatory input.txt.
+    # 4. Handle connections.txt: Use test-specific file or fall back to base.
+    test_connections_file = test_case_dir / "connections.txt"
+    if test_connections_file.exists():
+        shutil.copy(test_connections_file, CONNECTIONS_FILE)
+        print(f"  - Using test-specific connections from: {test_connections_file}")
+    else:
+        shutil.copy(DEFAULT_CONNECTIONS_BASE, CONNECTIONS_FILE)
+        print(f"  - Using base connections from: {DEFAULT_CONNECTIONS_BASE}")
+
+    # 5. Handle mandatory input.txt.
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
         typer.secho(f"ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
