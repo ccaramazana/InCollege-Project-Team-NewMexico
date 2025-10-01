@@ -538,8 +538,13 @@
 
            EVALUATE INPUT-CHOICE-BUF
                WHEN "1"
-                   PERFORM SEND-CONNECTION-REQUEST
-                   IF REQUEST-SUCCESS = "Y"
+                   IF FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
+                   AND FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+                       MOVE "Invalid. Can't send connection to yourself." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   ELSE
+                       PERFORM SEND-CONNECTION-REQUEST
+                       IF REQUEST-SUCCESS = "Y"
                        MOVE "Connection request sent successfully." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    END-IF
