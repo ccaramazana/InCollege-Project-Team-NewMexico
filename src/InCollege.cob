@@ -640,7 +640,7 @@
        *> View pending requests
 
        PENDING-REQUESTS-PROCEDURE.
-           MOVE "Pending Connection Requests:" TO TO-OUTPUT-BUF
+           MOVE "----- Pending Connection Requests: -----" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
 
            *> Initialize flag to track if any requests exist
@@ -648,6 +648,7 @@
 
            *> Open connections file for input
            OPEN INPUT CONNECTIONS-FILE
+
            IF CONN-FILE-STATUS = "35"
                *> File doesn't exist, just show no requests message
                MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
@@ -662,33 +663,27 @@
            *> Initialize end-of-file flag
            SET NOT-END-OF-FILE TO TRUE
 
-           *> Read first record to start loop
-           READ CONNECTIONS-FILE
-               AT END
-                   SET END-OF-FILE TO TRUE
-           END-READ
-
            PERFORM UNTIL END-OF-FILE
-               *> Check if the logged-in user is the receiver and request is pending
-               IF FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-               AND FUNCTION TRIM(RECEIVER-LAST) = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
-               AND FUNCTION TRIM(CONN-STATUS) = "Pending"
-                   MOVE "From: " TO TO-OUTPUT-BUF
-                   STRING
-                       FUNCTION TRIM(SENDER-FIRST) DELIMITED BY SIZE
-                       " " DELIMITED BY SIZE
-                       FUNCTION TRIM(SENDER-LAST) DELIMITED BY SIZE
-                       INTO TO-OUTPUT-BUF
-                   END-STRING
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   MOVE "Y" TO CONNECTION-EXIST-FLAG
-               END-IF
-
                READ CONNECTIONS-FILE
                    AT END
                        SET END-OF-FILE TO TRUE
+                   NOT AT END
+                       *> Check if the logged-in user is the receiver and request is pending
+                       IF FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
+                       AND FUNCTION TRIM(RECEIVER-LAST) = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+                       AND FUNCTION TRIM(CONN-STATUS) = "Pending"
+                           MOVE SPACES TO TO-OUTPUT-BUF
+                           STRING
+                               FUNCTION TRIM(SENDER-FIRST) DELIMITED BY SIZE
+                               " " DELIMITED BY SIZE
+                               FUNCTION TRIM(SENDER-LAST) DELIMITED BY SIZE
+                               INTO TO-OUTPUT-BUF
+                           END-STRING
+                           PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           MOVE "Y" TO CONNECTION-EXIST-FLAG
+                       END-IF
                END-READ
-           END-PERFORM
+           END-PERFORM.
 
            *> If no pending requests, display message
            IF CONNECTION-EXIST-FLAG = "N"
@@ -697,6 +692,9 @@
            END-IF
 
            CLOSE CONNECTIONS-FILE.
+
+           MOVE "----------------------------------------" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
       *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
