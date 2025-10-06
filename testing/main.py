@@ -125,7 +125,7 @@ def run(
     cobol_executable: Annotated[Path, typer.Option(
         "--executable", "-e",
         help="Path to the compiled COBOL executable file.",
-        exists=True, file_okay=True
+        exists=False, file_okay=True
     )] = DEFAULT_EXECUTABLE,
     no_compile: Annotated[bool, typer.Option(
         "--no-compile",
