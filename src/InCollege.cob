@@ -30,8 +30,8 @@
        01  SECRETS-RECORD.
            05 SECRET-USERNAME PIC X(20).
            05 SECRET-PASSWORD PIC X(12).
-       FD PROFILES-FILE.
-       01 PROFILES-RECORD.
+       FD  PROFILES-FILE.
+       01  PROFILES-RECORD.
            05 PROFILE-FIRST-NAME PIC X(80).
            05 PROFILE-LAST-NAME PIC X(80).
            05 PROFILE-UNIVERSITY PIC X(80).
@@ -50,27 +50,27 @@
 
        FD CONNECTIONS-FILE.
        01 CONNECTIONS-RECORD.
-           05 SENDER-FIRST PIC X(20).
-           05 SENDER-LAST PIC X(20).
-           05 RECEIVER-FIRST PIC X(20).
-           05 RECEIVER-LAST PIC X(20).
+
+           05 SENDER-USERNAME PIC X(20).
+
+           05 RECEIVER-USERNAME PIC X(20).
            05 CONN-STATUS PIC X(20).
 
        WORKING-STORAGE SECTION.
 
-       01 YEARS-INPUT            PIC X(20).
-       01 YEARS-LEN              PIC 99.
-       01 YEARS-SEP              PIC X(1).
-       01 YEAR-START             PIC 9(4).
-       01 YEAR-END               PIC 9(4).
-       01 YEARS-VALID-FLAG       PIC X VALUE 'N'.
+       01  YEARS-INPUT            PIC X(20).
+       01  YEARS-LEN              PIC 99.
+       01  YEARS-SEP              PIC X(1).
+       01  YEAR-START             PIC 9(4).
+       01  YEAR-END               PIC 9(4).
+       01  YEARS-VALID-FLAG       PIC X VALUE 'N'.
            88 YEARS-VALID         VALUE 'Y'.
            88 YEARS-INVALID       VALUE 'N'.
 
-       01 SEC-STATUS   PIC XX VALUE SPACES.
-       01 PRO-STATUS   PIC XX VALUE SPACES.
+       01  SEC-STATUS   PIC XX VALUE SPACES.
+       01  PRO-STATUS   PIC XX VALUE SPACES.
 
-       01 PROGRAM-STATUS.
+       01  PROGRAM-STATUS.
            05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
                88 EXIT-PROGRAM VALUE 'Y'.
 
@@ -82,7 +82,7 @@
                10 USER-USERNAME PIC X(20).
                10 USER-PASSWORD PIC X(12).
 
-       01 USER-PROFILES.
+       01  USER-PROFILES.
            05 USER-PROFILES-TABLE OCCURS 5 TIMES.
                10 USER-FIRST-NAME PIC X(80).
                10 USER-LAST-NAME PIC X(80).
@@ -158,10 +158,10 @@
        01  SEARCH-NAME            PIC X(50).   *> input search value
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
-       01 PROFILE-HEADING    PIC X(30).
+       01  PROFILE-HEADING    PIC X(30).
 
-       01 CONN-FILE-STATUS   PIC XX VALUE SPACES.
-       01 REQUEST-SUCCESS   PIC X VALUE "N".
+       01  CONN-FILE-STATUS   PIC XX VALUE SPACES.
+       01  REQUEST-SUCCESS   PIC X VALUE "N".
 
 
        PROCEDURE DIVISION.
@@ -292,6 +292,7 @@
                PERFORM INITIAL-PROMPT-PROCEDURE
 
            END-IF.
+
 *> Performs Username and Password Checks
        SIGN-UP-PROCEDURE.
 
@@ -538,8 +539,7 @@
 
            EVALUATE INPUT-CHOICE-BUF
                WHEN "1"
-                   IF FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                   AND FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+                   IF FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
                        MOVE "Invalid. Can't send connection to yourself." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    ELSE
@@ -587,10 +587,8 @@
                    AT END
                        SET END-OF-FILE TO true
                    NOT AT END
-                       IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+                       IF FUNCTION TRIM(SENDER-USERNAME) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                       AND FUNCTION TRIM(RECEIVER-USERNAME) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
                            IF FUNCTION TRIM(CONN-STATUS) = "Connected"
                                MOVE "Y" TO CONNECTION-EXIST-FLAG
                                MOVE "Already connected with this user." TO TO-OUTPUT-BUF
@@ -600,10 +598,8 @@
                                MOVE "You have already sent a request to this user." TO TO-OUTPUT-BUF
                                PERFORM DISPLAY-AND-WRITE-OUTPUT
                            END-IF
-                       ELSE IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+                       ELSE IF FUNCTION TRIM(SENDER-USERNAME) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
+                       AND FUNCTION TRIM(RECEIVER-USERNAME)  = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                        AND FUNCTION TRIM(CONN-STATUS) = "Pending"
                           MOVE "Y" TO CONNECTION-EXIST-FLAG
                           MOVE "This user has already sent you a request." TO TO-OUTPUT-BUF
@@ -624,10 +620,8 @@
                OPEN EXTEND CONNECTIONS-FILE
 
                IF CONN-FILE-STATUS = "00"
-                   MOVE USER-FIRST-NAME(LOGGED-IN-RANK) TO SENDER-FIRST
-                   MOVE USER-LAST-NAME(LOGGED-IN-RANK)  TO SENDER-LAST
-                   MOVE USER-FIRST-NAME(PROFILE-INDEX)  TO RECEIVER-FIRST
-                   MOVE USER-LAST-NAME(PROFILE-INDEX)   TO RECEIVER-LAST
+                   MOVE USER-USERNAME(LOGGED-IN-RANK) TO SENDER-USERNAME
+                   MOVE USER-USERNAME(PROFILE-INDEX)   TO RECEIVER-USERNAME
                    MOVE "Pending" TO CONN-STATUS
 
                    WRITE CONNECTIONS-RECORD
@@ -674,18 +668,23 @@
                        SET END-OF-FILE TO TRUE
                    NOT AT END
                        *> Check if the logged-in user is the receiver and request is pending
-                       IF FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-LAST) = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
+                       IF FUNCTION TRIM(RECEIVER-USERNAME) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                        AND FUNCTION TRIM(CONN-STATUS) = "Pending"
-                           MOVE SPACES TO TO-OUTPUT-BUF
-                           STRING
-                               FUNCTION TRIM(SENDER-FIRST) DELIMITED BY SIZE
-                               " " DELIMITED BY SIZE
-                               FUNCTION TRIM(SENDER-LAST) DELIMITED BY SIZE
-                               INTO TO-OUTPUT-BUF
-                           END-STRING
-                           PERFORM DISPLAY-AND-WRITE-OUTPUT
-                           MOVE "Y" TO CONNECTION-EXIST-FLAG
+                           MOVE 0 TO PROFILE-INDEX
+                           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+                               IF FUNCTION TRIM(SENDER-USERNAME) = FUNCTION TRIM(USER-USERNAME(I))
+                                   MOVE I TO PROFILE-INDEX
+                                   MOVE SPACES TO TO-OUTPUT-BUF
+                                   STRING
+                                       FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                                       " " DELIMITED BY SIZE
+                                       FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                                       INTO TO-OUTPUT-BUF
+                                   END-STRING
+                                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                                   MOVE "Y" TO CONNECTION-EXIST-FLAG
+                               END-IF
+                           END-PERFORM
                        END-IF
                END-READ
            END-PERFORM.
