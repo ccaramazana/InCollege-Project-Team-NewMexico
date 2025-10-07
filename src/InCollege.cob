@@ -17,6 +17,9 @@
            SELECT CONNECTIONS-FILE ASSIGN TO "connections.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS CONN-FILE-STATUS.
+           SELECT NETWORKS-FILE ASSIGN TO "networks.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS NET-FILE-STATUS.
 
 
        DATA DIVISION.
@@ -30,8 +33,8 @@
        01  SECRETS-RECORD.
            05 SECRET-USERNAME PIC X(20).
            05 SECRET-PASSWORD PIC X(12).
-       FD PROFILES-FILE.
-       01 PROFILES-RECORD.
+       FD  PROFILES-FILE.
+       01  PROFILES-RECORD.
            05 PROFILE-FIRST-NAME PIC X(80).
            05 PROFILE-LAST-NAME PIC X(80).
            05 PROFILE-UNIVERSITY PIC X(80).
@@ -48,29 +51,31 @@
                10 PROF-EDU-UNIVERSITY PIC X(80).
                10 PROF-EDU-YEARS PIC X(80).
 
-       FD CONNECTIONS-FILE.
-       01 CONNECTIONS-RECORD.
-           05 SENDER-FIRST PIC X(20).
-           05 SENDER-LAST PIC X(20).
-           05 RECEIVER-FIRST PIC X(20).
-           05 RECEIVER-LAST PIC X(20).
-           05 CONN-STATUS PIC X(20).
+       FD  CONNECTIONS-FILE.
+       01  CONNECTIONS-RECORD.
+           05 SENDER-USERNAME PIC X(20).
+           05 RECEIVER-USERNAME PIC X(20).
+
+       FD  NETWORKS-FILE.
+       01  NETWORKS-RECORD.
+           05 NETWORKS-SENDER PIC X(20).
+           05 NETWORKS-RECIEVER PIC X(20).
 
        WORKING-STORAGE SECTION.
 
-       01 YEARS-INPUT            PIC X(20).
-       01 YEARS-LEN              PIC 99.
-       01 YEARS-SEP              PIC X(1).
-       01 YEAR-START             PIC 9(4).
-       01 YEAR-END               PIC 9(4).
-       01 YEARS-VALID-FLAG       PIC X VALUE 'N'.
+       01  YEARS-INPUT            PIC X(20).
+       01  YEARS-LEN              PIC 99.
+       01  YEARS-SEP              PIC X(1).
+       01  YEAR-START             PIC 9(4).
+       01  YEAR-END               PIC 9(4).
+       01  YEARS-VALID-FLAG       PIC X VALUE 'N'.
            88 YEARS-VALID         VALUE 'Y'.
            88 YEARS-INVALID       VALUE 'N'.
 
-       01 SEC-STATUS   PIC XX VALUE SPACES.
-       01 PRO-STATUS   PIC XX VALUE SPACES.
+       01  SEC-STATUS   PIC XX VALUE SPACES.
+       01  PRO-STATUS   PIC XX VALUE SPACES.
 
-       01 PROGRAM-STATUS.
+       01  PROGRAM-STATUS.
            05 WS-EXIT-FLAG PIC A(1) VALUE 'N'.
                88 EXIT-PROGRAM VALUE 'Y'.
 
@@ -82,7 +87,7 @@
                10 USER-USERNAME PIC X(20).
                10 USER-PASSWORD PIC X(12).
 
-       01 USER-PROFILES.
+       01  USER-PROFILES.
            05 USER-PROFILES-TABLE OCCURS 5 TIMES.
                10 USER-FIRST-NAME PIC X(80).
                10 USER-LAST-NAME PIC X(80).
@@ -99,6 +104,18 @@
                    15 EDU-DEGREE PIC X(80).
                    15 EDU-UNIVERSITY PIC X(80).
                    15 EDU-YEARS PIC X(80).
+
+       01  CONNECTIONS-DATA.
+           05 CONNECTIONS-TABLE OCCURS 25 TIMES.
+               10 CON-SENDER PIC X(20).
+               10 CON-RECEIVER PIC X(20).
+       01 CONNECTION-COUNT PIC 99 VALUE 0.
+
+       01  NETWORK-DATA.
+           05 NETWORK-COUNT PIC 99 VALUE 0.
+           05 NETWORKS-TABLE OCCURS 100 TIMES.
+               10 NETWORK-USER1 PIC X(20).
+               10 NETWORK-USER2 PIC X(20).
 
        01  USER-COUNT PIC 9 VALUE 0.
 
@@ -132,20 +149,20 @@
        01  MENU-EXIT-FLAG PIC A(1).
            88 EXIT-MENU VALUE 'Y'.
 
-       01 SKILLS-MENU-EXIT-FLAG PIC A(1).
+       01  SKILLS-MENU-EXIT-FLAG PIC A(1).
            88 EXIT-SKILLS-MENU VALUE 'Y'.
 
-       01 SIGNUP-VARS.
+       01  SIGNUP-VARS.
            05 SIGNUP-USERNAME PIC X(20).
            05 USERNAME-EXISTS-FLAG PIC A(1).
                88 USERNAME-EXISTS VALUE "Y".
                88 USERNAME-DOESNT-EXIST VALUE "N".
 
-       01 PROFILE-CREATION-FAILURE-FLAG PIC A(1).
+       01  PROFILE-CREATION-FAILURE-FLAG PIC A(1).
            88 EXIT-PROFILE-CREATION VALUE 'Y'.
 
-       01 EXP-SUBS         PIC 9(2) VALUE 0.
-       01 EDU-SUBS         PIC 9(2) VALUE 0.
+       01  EXP-SUBS         PIC 9(2) VALUE 0.
+       01  EDU-SUBS         PIC 9(2) VALUE 0.
 
 
        01  WS-EOF-FLAG       PIC X VALUE "N".
@@ -158,11 +175,11 @@
        01  SEARCH-NAME            PIC X(50).   *> input search value
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
-       01 PROFILE-HEADING    PIC X(30).
+       01  PROFILE-HEADING    PIC X(30).
 
-       01 CONN-FILE-STATUS   PIC XX VALUE SPACES.
-       01 REQUEST-SUCCESS   PIC X VALUE "N".
-
+       01  CONN-FILE-STATUS   PIC XX VALUE SPACES.
+       01  REQUEST-SUCCESS   PIC X VALUE "N".
+       01  NET-FILE-STATUS PIC XX VALUE SPACES.
 
        PROCEDURE DIVISION.
 
@@ -173,6 +190,8 @@
 
            PERFORM LOAD-USERS-FROM-FILE.
            PERFORM LOAD-PROFILES-FROM-FILE.
+           PERFORM LOAD-CONNECTIONS-FROM-FILE.
+           PERFORM LOAD-NETWORKS-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
 
            CLOSE INPUT-FILE.
@@ -226,6 +245,80 @@
            END-PERFORM
            CLOSE PROFILES-FILE.
 
+       LOAD-CONNECTIONS-FROM-FILE.
+           INITIALIZE CONNECTIONS-DATA.
+           OPEN INPUT CONNECTIONS-FILE.
+
+           IF CONN-FILE-STATUS = "35"
+               OPEN OUTPUT CONNECTIONS-FILE
+               CLOSE CONNECTIONS-FILE
+               OPEN INPUT CONNECTIONS-FILE
+           END-iF
+
+           SET NOT-END-OF-FILE TO TRUE.
+
+           PERFORM UNTIL END-OF-FILE
+               READ CONNECTIONS-FILE
+                   AT END
+                       SET END-OF-FILE TO TRUE
+                   NOT AT END
+                       ADD 1 TO CONNECTION-COUNT
+                       MOVE CONNECTIONS-RECORD TO CONNECTIONS-TABLE(CONNECTION-COUNT)
+               END-READ
+           END-PERFORM
+
+           CLOSE CONNECTIONS-FILE.
+
+       LOAD-NETWORKS-FROM-FILE.
+           INITIALIZE NETWORK-DATA.
+           OPEN INPUT NETWORKS-FILE.
+
+           IF NET-FILE-STATUS = "35"
+               OPEN OUTPUT NETWORKS-FILE
+               CLOSE NETWORKS-FILE
+               EXIT PARAGRAPH
+           END-IF.
+
+           SET NOT-END-OF-FILE TO TRUE.
+
+           PERFORM UNTIL END-OF-FILE
+               READ NETWORKS-FILE
+                   AT END
+                       SET END-OF-FILE TO TRUE
+                   NOT AT END
+                       ADD 1 TO NETWORK-COUNT
+                       MOVE NETWORKS-RECORD TO NETWORKS-TABLE(NETWORK-COUNT)
+               END-READ
+           END-PERFORM.
+
+           CLOSE NETWORKS-FILE.
+
+       SAVE-USERS-TO-FILE.
+           OPEN OUTPUT SECRETS-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+               MOVE USER-USERNAME(I) TO SECRET-USERNAME
+               MOVE USER-PASSWORD(I) TO SECRET-PASSWORD
+               WRITE SECRETS-RECORD
+           END-PERFORM.
+           CLOSE SECRETS-FILE.
+
+*> Saves created profiles to file
+       SAVE-PROFILES-TO-FILE.
+           OPEN OUTPUT PROFILES-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+               MOVE USER-PROFILES-TABLE(I) TO PROFILES-RECORD
+               WRITE PROFILES-RECORD
+           END-PERFORM.
+           CLOSE PROFILES-FILE.
+
+       SAVE-CONNECTIONS-TO-FILE.
+           OPEN OUTPUT CONNECTIONS-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > CONNECTION-COUNT
+               MOVE CON-SENDER(I) TO SENDER-USERNAME
+               MOVE CON-RECEIVER(I) TO RECEIVER-USERNAME
+               WRITE CONNECTIONS-RECORD
+           END-PERFORM.
+           CLOSE CONNECTIONS-FILE.
 
 *> Prompts user the inital menu choice
        INITIAL-PROMPT-PROCEDURE.
@@ -292,6 +385,7 @@
                PERFORM INITIAL-PROMPT-PROCEDURE
 
            END-IF.
+
 *> Performs Username and Password Checks
        SIGN-UP-PROCEDURE.
 
@@ -394,25 +488,6 @@
            IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
                SET IS-NOT-VALID TO TRUE.
 
-*> Saves created accounts to file
-       SAVE-USERS-TO-FILE.
-           OPEN OUTPUT SECRETS-FILE.
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
-               MOVE USER-USERNAME(I) TO SECRET-USERNAME
-               MOVE USER-PASSWORD(I) TO SECRET-PASSWORD
-               WRITE SECRETS-RECORD
-           END-PERFORM.
-           CLOSE SECRETS-FILE.
-
-*> Saves created profiles to file
-       SAVE-PROFILES-TO-FILE.
-           OPEN OUTPUT PROFILES-FILE.
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
-               MOVE USER-PROFILES-TABLE(I) TO PROFILES-RECORD
-               WRITE PROFILES-RECORD
-           END-PERFORM.
-           CLOSE PROFILES-FILE.
-
 *> The menu the user is prompted after a sucessful login
        POST-LOGIN-NAVIGATION.
 
@@ -423,15 +498,17 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) View My Profile" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "3) Search for a job" TO TO-OUTPUT-BUF
+               MOVE "3) Search For a Job" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "4) Find someone you know" TO TO-OUTPUT-BUF
+               MOVE "4) Find Someone You Know" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "5) Learn a new skill" TO TO-OUTPUT-BUF
+               MOVE "5) Learn a New Skill" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "6) View my Pending Connection Requests" TO TO-OUTPUT-BUF
+               MOVE "6) View My Pending Connection Requests" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "7) Log Out" TO TO-OUTPUT-BUF
+               MOVE "7) View My Network" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "8) Log Out" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -470,13 +547,15 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "7"
+                   PERFORM VIEW-NETWORK-PROCEDURE
+               END-IF
+
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "8"
                    SET EXIT-MENU TO TRUE
                END-IF
 
            END-PERFORM.
 
-
-       *> finding someone by Search
        *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
        FIND-SOMEONE-PROCEDURE.
            MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
@@ -538,8 +617,7 @@
 
            EVALUATE INPUT-CHOICE-BUF
                WHEN "1"
-                   IF FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                   AND FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
+                   IF FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
                        MOVE "Invalid. Can't send connection to yourself." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    ELSE
@@ -564,83 +642,49 @@
            *> Assume failure until proven success
            MOVE "N" TO REQUEST-SUCCESS.
            MOVE "N" TO CONNECTION-EXIST-FLAG.
-           SET NOT-END-OF-FILE TO TRUE.
 
-           *> Try to open connections file for read/write
-           OPEN INPUT CONNECTIONS-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > CONNECTION-COUNT
+               IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+               AND FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
+                   MOVE "Y" TO CONNECTION-EXIST-FLAG
+                   MOVE "You have already sent a request to this user." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               ELSE IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
+               AND FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                   MOVE "Y" TO CONNECTION-EXIST-FLAG
+                   MOVE "This user has already sent you a request." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
 
-           IF CONN-FILE-STATUS = "35"
-               *> File doesn't exist, create it
-               OPEN OUTPUT CONNECTIONS-FILE
-               CLOSE CONNECTIONS-FILE
-               OPEN INPUT CONNECTIONS-FILE
-           END-IF.
-
-           IF CONN-FILE-STATUS NOT = "00"
-               MOVE "Unable to open connections file." TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               GO TO SEND-CONNECTION-REQUEST-EXIT
-           END-IF.
-
-           PERFORM UNTIL END-OF-FILE
-               READ CONNECTIONS-FILE
-                   AT END
-                       SET END-OF-FILE TO true
-                   NOT AT END
-                       IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
-                           IF FUNCTION TRIM(CONN-STATUS) = "Connected"
-                               MOVE "Y" TO CONNECTION-EXIST-FLAG
-                               MOVE "Already connected with this user." TO TO-OUTPUT-BUF
-                               PERFORM DISPLAY-AND-WRITE-OUTPUT
-                           ELSE IF FUNCTION TRIM(CONN-STATUS) = "Pending"
-                               MOVE "Y" TO CONNECTION-EXIST-FLAG
-                               MOVE "You have already sent a request to this user." TO TO-OUTPUT-BUF
-                               PERFORM DISPLAY-AND-WRITE-OUTPUT
-                           END-IF
-                       ELSE IF FUNCTION TRIM(SENDER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(SENDER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX))
-                       AND FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-LAST)  = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(CONN-STATUS) = "Pending"
-                          MOVE "Y" TO CONNECTION-EXIST-FLAG
-                          MOVE "This user has already sent you a request." TO TO-OUTPUT-BUF
-                          PERFORM DISPLAY-AND-WRITE-OUTPUT
-                       END-IF
-
-                       IF CONNECTION-EXIST-FLAG = "Y"
-                           SET END-OF-FILE TO TRUE
-                       END-IF
-               END-READ
+               IF CONNECTION-EXIST-FLAG = "Y"
+                   EXIT PERFORM
+               END-IF
            END-PERFORM.
 
-           CLOSE CONNECTIONS-FILE.
+           IF CONNECTION-EXIST-FLAG = "N"
+
+               PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
+                   IF (FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                   AND FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX)))
+                   OR
+                   (FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
+                   AND FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)))
+                       MOVE "Y" TO CONNECTION-EXIST-FLAG
+                       MOVE "Already connected with this user." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       EXIT PERFORM
+                   END-IF
+               END-PERFORM
+           END-IF
 
            *> If no conflicts, create new connection request
            IF CONNECTION-EXIST-FLAG = "N"
-
-               OPEN EXTEND CONNECTIONS-FILE
-
-               IF CONN-FILE-STATUS = "00"
-                   MOVE USER-FIRST-NAME(LOGGED-IN-RANK) TO SENDER-FIRST
-                   MOVE USER-LAST-NAME(LOGGED-IN-RANK)  TO SENDER-LAST
-                   MOVE USER-FIRST-NAME(PROFILE-INDEX)  TO RECEIVER-FIRST
-                   MOVE USER-LAST-NAME(PROFILE-INDEX)   TO RECEIVER-LAST
-                   MOVE "Pending" TO CONN-STATUS
-
-                   WRITE CONNECTIONS-RECORD
-                   MOVE "Y" TO REQUEST-SUCCESS
-
-                   CLOSE CONNECTIONS-FILE
-               ELSE
-                   MOVE "Error writing to connections file." TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-               END-IF
+               ADD 1 TO CONNECTION-COUNT
+               MOVE USER-USERNAME(LOGGED-IN-RANK) TO CON-SENDER(CONNECTION-COUNT)
+               MOVE USER-USERNAME(PROFILE-INDEX) TO CON-RECEIVER(CONNECTION-COUNT)
+               PERFORM SAVE-CONNECTIONS-TO-FILE
+               MOVE "Y" TO REQUEST-SUCCESS
            END-IF.
-       SEND-CONNECTION-REQUEST-EXIT.
-           EXIT.
 
        *> View pending requests
 
@@ -651,43 +695,11 @@
            *> Initialize flag to track if any requests exist
            MOVE "N" TO CONNECTION-EXIST-FLAG
 
-           *> Open connections file for input
-           OPEN INPUT CONNECTIONS-FILE
-
-           IF CONN-FILE-STATUS = "35"
-               *> File doesn't exist, just show no requests message
-               MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               EXIT.
-
-           IF CONN-FILE-STATUS NOT = "00"
-               MOVE "Unable to open connections file." TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-               EXIT.
-
-           *> Initialize end-of-file flag
-           SET NOT-END-OF-FILE TO TRUE
-
-           PERFORM UNTIL END-OF-FILE
-               READ CONNECTIONS-FILE
-                   AT END
-                       SET END-OF-FILE TO TRUE
-                   NOT AT END
-                       *> Check if the logged-in user is the receiver and request is pending
-                       IF FUNCTION TRIM(RECEIVER-FIRST) = FUNCTION TRIM(USER-FIRST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(RECEIVER-LAST) = FUNCTION TRIM(USER-LAST-NAME(LOGGED-IN-RANK))
-                       AND FUNCTION TRIM(CONN-STATUS) = "Pending"
-                           MOVE SPACES TO TO-OUTPUT-BUF
-                           STRING
-                               FUNCTION TRIM(SENDER-FIRST) DELIMITED BY SIZE
-                               " " DELIMITED BY SIZE
-                               FUNCTION TRIM(SENDER-LAST) DELIMITED BY SIZE
-                               INTO TO-OUTPUT-BUF
-                           END-STRING
-                           PERFORM DISPLAY-AND-WRITE-OUTPUT
-                           MOVE "Y" TO CONNECTION-EXIST-FLAG
-                       END-IF
-               END-READ
+           PERFORM VARYING I FROM CONNECTION-COUNT BY -1 UNTIL I < 1
+               IF FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                   MOVE "Y" TO CONNECTION-EXIST-FLAG
+                   PERFORM PROCESS-REQUEST-PROCEDURE
+               END-IF
            END-PERFORM.
 
            *> If no pending requests, display message
@@ -696,10 +708,154 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
            END-IF
 
-           CLOSE CONNECTIONS-FILE.
-
            MOVE "----------------------------------------" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           EXIT.
+
+       PROCESS-REQUEST-PROCEDURE.
+           PERFORM USER-CHOICE-PROCEDURE.
+
+           IF INPUT-CHOICE-BUF = "1"
+               PERFORM ESTABLISHED-NETWORK-PROCEDURE
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING
+                   "Connection request from: " DELIMITED BY SIZE
+                   FUNCTION TRIM(FULL-NAME) DELIMITED BY SIZE
+                   " accepted!" DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               END-STRING
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF
+
+           IF INPUT-CHOICE-BUF = "2"
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING
+                   "Connection request from: " DELIMITED BY SIZE
+                   FUNCTION TRIM(FULL-NAME) DELIMITED BY SIZE
+                   " rejected!" DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               END-STRING
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF
+
+           PERFORM REMOVE-PENDING-PROCEDURE
+           PERFORM SAVE-CONNECTIONS-TO-FILE.
+
+       REMOVE-PENDING-PROCEDURE.
+           PERFORM VARYING J FROM I BY 1 UNTIL J >= CONNECTION-COUNT
+               MOVE CONNECTIONS-TABLE(J + 1) TO CONNECTIONS-TABLE(J)
+           END-PERFORM
+           SUBTRACT 1 FROM CONNECTION-COUNT.
+
+       ESTABLISHED-NETWORK-PROCEDURE.
+           OPEN EXTEND NETWORKS-FILE.
+
+           IF NET-FILE-STATUS = "35"
+               CLOSE NETWORKS-FILE
+               OPEN OUTPUT NETWORKS-FILE
+           END-IF.
+
+           MOVE CON-SENDER(I) TO NETWORKS-SENDER.
+           MOVE CON-RECEIVER(I) TO NETWORKS-RECIEVER.
+           WRITE NETWORKS-RECORD.
+           CLOSE NETWORKS-FILE.
+
+       USER-CHOICE-PROCEDURE.
+
+           MOVE 0 TO PROFILE-INDEX
+           PERFORM VARYING J FROM 1 BY 1 UNTIL J > USER-COUNT
+               IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(J))
+                   MOVE J TO PROFILE-INDEX
+                   EXIT PERFORM
+               END-IF
+           END-PERFORM
+
+           IF PROFILE-INDEX > 0
+               MOVE SPACES TO FULL-NAME
+               STRING
+                   FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                   " " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                   INTO FULL-NAME
+               END-STRING
+
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING
+                   "Request from: " DELIMITED BY SIZE
+                   FUNCTION TRIM(FULL-NAME) DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               END-STRING
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               MOVE "1) Accept" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2) Reject" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING
+                   "Enter your choice for " DELIMITED BY SIZE
+                   FUNCTION TRIM(FULL-NAME) DELIMITED BY SIZE
+                   ":" DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               END-STRING
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               PERFORM READ-INPUT-SAFELY
+
+               IF EXIT-PROGRAM
+                   PERFORM EXIT-EARLY
+               END-IF
+               MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
+
+               IF INPUT-CHOICE-BUF NOT = "1" AND INPUT-CHOICE-BUF NOT = "2"
+                   MOVE "Invalid choice. Request Skipped." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-IF.
+
+       VIEW-NETWORK-PROCEDURE.
+           PERFORM LOAD-NETWORKS-FROM-FILE.
+
+           MOVE "--- Your Network ---" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
+               IF FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                   PERFORM VARYING J FROM 1 BY 1 UNTIL J > USER-COUNT
+                       IF FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(J))
+                           MOVE J TO PROFILE-INDEX
+                           EXIT PERFORM
+                       END-IF
+                   END-PERFORM
+               ELSE IF FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
+                   PERFORM VARYING J FROM 1 BY 1 UNTIL J > USER-COUNT
+                       IF FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(J))
+                           MOVE J TO PROFILE-INDEX
+                           EXIT PERFORM
+                       END-IF
+                   END-PERFORM
+               END-IF
+
+               MOVE SPACES TO TO-OUTPUT-BUF
+               STRING
+                   "Connected with: " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                   " " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-LAST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
+                   " (University: " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-UNIVERSITY(PROFILE-INDEX)) DELIMITED BY SIZE
+                   ", Major: " DELIMITED BY SIZE
+                   FUNCTION TRIM(USER-MAJOR(PROFILE-INDEX)) DELIMITED BY SIZE
+                   ")" DELIMITED BY SIZE
+                   INTO TO-OUTPUT-BUF
+               END-STRING
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-PERFORM
+
+           MOVE "---------------------" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
 
       *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
