@@ -246,6 +246,7 @@
            END-PERFORM
            CLOSE PROFILES-FILE.
 
+*> Load connetions from file to read.
        LOAD-CONNECTIONS-FROM-FILE.
            INITIALIZE CONNECTIONS-DATA.
            OPEN INPUT CONNECTIONS-FILE.
@@ -270,6 +271,7 @@
 
            CLOSE CONNECTIONS-FILE.
 
+*> Load networks from file to read.
        LOAD-NETWORKS-FROM-FILE.
            INITIALIZE NETWORK-DATA.
            OPEN INPUT NETWORKS-FILE.
@@ -595,13 +597,13 @@
                END-IF
            END-PERFORM
 
-               *> If we didn't find anyone (PROFILE-INDEX will still be 0)
+           *> If we didn't find anyone (PROFILE-INDEX will still be 0)
            IF PROFILE-INDEX = 0
                MOVE "No user found with that name." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
            END-IF.
 
-
+*> Prompts user the menu when they view a profile.
        PROFILE-OPTIONS.
            MOVE "1) Send Connection Request" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -616,6 +618,7 @@
            END-IF
            MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
 
+*> Checks input to decide what action to take.
            EVALUATE INPUT-CHOICE-BUF
                WHEN "1"
                    IF FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
@@ -646,6 +649,7 @@
            MOVE "N" TO REQUEST-SUCCESS.
            MOVE "N" TO CONNECTION-EXIST-FLAG.
 
+*> Check if user is in connections.txt
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > CONNECTION-COUNT
                IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                AND FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
@@ -664,6 +668,7 @@
                END-IF
            END-PERFORM.
 
+*> If not, check if user is in networks.txt
            IF CONNECTION-EXIST-FLAG = "N"
 
                PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
@@ -698,6 +703,7 @@
            *> Initialize flag to track if any requests exist
            MOVE "N" TO CONNECTION-EXIST-FLAG
 
+*> Check to see if there are request for logged in user.
            PERFORM VARYING I FROM CONNECTION-COUNT BY -1 UNTIL I < 1
                IF FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                    MOVE "Y" TO CONNECTION-EXIST-FLAG
@@ -715,6 +721,7 @@
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            EXIT.
 
+*> Prompts user for input on what to do for that pending request.
        PROCESS-REQUEST-PROCEDURE.
            PERFORM USER-CHOICE-PROCEDURE.
 
@@ -744,12 +751,14 @@
            PERFORM REMOVE-PENDING-PROCEDURE
            PERFORM SAVE-CONNECTIONS-TO-FILE.
 
+*> Remove current pending connection from connections.txt
        REMOVE-PENDING-PROCEDURE.
            PERFORM VARYING J FROM I BY 1 UNTIL J >= CONNECTION-COUNT
                MOVE CONNECTIONS-TABLE(J + 1) TO CONNECTIONS-TABLE(J)
            END-PERFORM
            SUBTRACT 1 FROM CONNECTION-COUNT.
 
+*> Add connection to networks.txt
        ESTABLISHED-NETWORK-PROCEDURE.
            OPEN EXTEND NETWORKS-FILE.
 
@@ -763,6 +772,7 @@
            WRITE NETWORKS-RECORD.
            CLOSE NETWORKS-FILE.
 
+*> Prompts user for a input
        USER-CHOICE-PROCEDURE.
 
            MOVE 0 TO PROFILE-INDEX
@@ -817,6 +827,7 @@
                END-IF
            END-IF.
 
+*> View networks the logged in user has.
        VIEW-NETWORK-PROCEDURE.
            PERFORM LOAD-NETWORKS-FROM-FILE.
 
@@ -855,6 +866,7 @@
            MOVE "----------------------------------------" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
+*> Print helper function
        DISPLAY-NETWORKS-PROCEDURE.
            MOVE SPACES TO TO-OUTPUT-BUF
                STRING
