@@ -171,6 +171,8 @@
 
        01  CONNECTION-EXIST-FLAG PIC X VALUE 'N'.
 
+       01  NETWORK-EXIST-FLAG PIC X VALUE 'N'.
+
        01  FULL-NAME              PIC X(50).
        01  SEARCH-NAME            PIC X(50).   *> input search value
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
@@ -191,7 +193,6 @@
            PERFORM LOAD-USERS-FROM-FILE.
            PERFORM LOAD-PROFILES-FROM-FILE.
            PERFORM LOAD-CONNECTIONS-FROM-FILE.
-           PERFORM LOAD-NETWORKS-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
 
            CLOSE INPUT-FILE.
@@ -640,6 +641,8 @@
 
        SEND-CONNECTION-REQUEST.
            *> Assume failure until proven success
+
+           PERFORM LOAD-NETWORKS-FROM-FILE.
            MOVE "N" TO REQUEST-SUCCESS.
            MOVE "N" TO CONNECTION-EXIST-FLAG.
 
@@ -817,27 +820,43 @@
        VIEW-NETWORK-PROCEDURE.
            PERFORM LOAD-NETWORKS-FROM-FILE.
 
-           MOVE "--- Your Network ---" TO TO-OUTPUT-BUF
+           MOVE 'N' TO NETWORK-EXIST-FLAG
+
+           MOVE "------------- Your Network -------------" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
                IF FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                    PERFORM VARYING J FROM 1 BY 1 UNTIL J > USER-COUNT
                        IF FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(J))
+                           MOVE 'Y' TO NETWORK-EXIST-FLAG
                            MOVE J TO PROFILE-INDEX
+                           PERFORM DISPLAY-NETWORKS-PROCEDURE
                            EXIT PERFORM
                        END-IF
                    END-PERFORM
                ELSE IF FUNCTION TRIM(NETWORK-USER2(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                    PERFORM VARYING J FROM 1 BY 1 UNTIL J > USER-COUNT
                        IF FUNCTION TRIM(NETWORK-USER1(I)) = FUNCTION TRIM(USER-USERNAME(J))
+                           MOVE 'Y' TO NETWORK-EXIST-FLAG
                            MOVE J TO PROFILE-INDEX
+                           PERFORM DISPLAY-NETWORKS-PROCEDURE
                            EXIT PERFORM
                        END-IF
                    END-PERFORM
                END-IF
+           END-PERFORM.
 
-               MOVE SPACES TO TO-OUTPUT-BUF
+           IF NETWORK-EXIST-FLAG = 'N'
+               MOVE "You have no network connections." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF
+
+           MOVE "----------------------------------------" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+       DISPLAY-NETWORKS-PROCEDURE.
+           MOVE SPACES TO TO-OUTPUT-BUF
                STRING
                    "Connected with: " DELIMITED BY SIZE
                    FUNCTION TRIM(USER-FIRST-NAME(PROFILE-INDEX)) DELIMITED BY SIZE
@@ -850,12 +869,7 @@
                    ")" DELIMITED BY SIZE
                    INTO TO-OUTPUT-BUF
                END-STRING
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-           END-PERFORM
-
-           MOVE "---------------------" TO TO-OUTPUT-BUF
-           PERFORM DISPLAY-AND-WRITE-OUTPUT.
-
+               PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
       *> Skils menu after selecting the skills option
        SKILLS-MENU-PROCEDURE.
