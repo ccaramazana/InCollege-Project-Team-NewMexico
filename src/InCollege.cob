@@ -20,6 +20,9 @@
            SELECT NETWORKS-FILE ASSIGN TO "networks.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS NET-FILE-STATUS.
+           SELECT JOBS-FILE ASSIGN TO "jobs.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS JOBS-FILE-STATUS.
 
 
        DATA DIVISION.
@@ -60,6 +63,15 @@
        01  NETWORKS-RECORD.
            05 NETWORKS-SENDER PIC X(20).
            05 NETWORKS-RECIEVER PIC X(20).
+
+       FD  JOBS-FILE.
+       01  JOBS-RECORD.
+           05 JOB-POSTER        PIC X(20).
+           05 JOB-TITLE         PIC X(80).
+           05 JOB-DESCRIPTION   PIC X(200).
+           05 JOB-EMPLOYER      PIC X(80).
+           05 JOB-LOCATION      PIC X(80).
+           05 JOB-SALARY        PIC X(20).
 
        WORKING-STORAGE SECTION.
 
@@ -116,6 +128,16 @@
            05 NETWORKS-TABLE OCCURS 100 TIMES.
                10 NETWORK-USER1 PIC X(20).
                10 NETWORK-USER2 PIC X(20).
+
+       01  WS-JOBS-DATA.
+           05 WS-JOB-COUNT PIC 99 VALUE 0.
+           05 WS-JOBS-TABLE OCCURS 100 TIMES.
+               10 WS-JOB-POSTER      PIC X(20).
+               10 WS-JOB-TITLE       PIC X(80).
+               10 WS-JOB-DESCRIPTION PIC X(200).
+               10 WS-JOB-EMPLOYER    PIC X(80).
+               10 WS-JOB-LOCATION    PIC X(80).
+               10 WS-JOB-SALARY      PIC X(20).
 
        01  USER-COUNT PIC 9 VALUE 0.
 
@@ -182,6 +204,7 @@
        01  CONN-FILE-STATUS   PIC XX VALUE SPACES.
        01  REQUEST-SUCCESS   PIC X VALUE "N".
        01  NET-FILE-STATUS PIC XX VALUE SPACES.
+       01  JOBS-FILE-STATUS PIC XX VALUE SPACES.
 
        PROCEDURE DIVISION.
 
@@ -193,6 +216,7 @@
            PERFORM LOAD-USERS-FROM-FILE.
            PERFORM LOAD-PROFILES-FROM-FILE.
            PERFORM LOAD-CONNECTIONS-FROM-FILE.
+           PERFORM LOAD-JOBS-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
 
            CLOSE INPUT-FILE.
@@ -296,6 +320,27 @@
 
            CLOSE NETWORKS-FILE.
 
+       LOAD-JOBS-FROM-FILE.
+           INITIALIZE WS-JOBS-DATA.
+           OPEN INPUT JOBS-FILE.
+           IF JOBS-FILE-STATUS = "35"
+               OPEN OUTPUT JOBS-FILE
+               CLOSE JOBS-FILE
+               OPEN INPUT JOBS-FILE
+               MOVE "00" TO JOBS-FILE-STATUS
+           END-IF.
+           SET NOT-END-OF-FILE TO TRUE.
+           PERFORM UNTIL END-OF-FILE
+               READ JOBS-FILE
+                   AT END
+                       SET END-OF-FILE TO TRUE
+                   NOT AT END
+                       ADD 1 TO WS-JOB-COUNT
+                       MOVE JOBS-RECORD TO WS-JOBS-TABLE(WS-JOB-COUNT)
+               END-READ
+           END-PERFORM.
+           CLOSE JOBS-FILE.
+
        SAVE-USERS-TO-FILE.
            OPEN OUTPUT SECRETS-FILE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -322,6 +367,14 @@
                WRITE CONNECTIONS-RECORD
            END-PERFORM.
            CLOSE CONNECTIONS-FILE.
+
+       SAVE-JOBS-TO-FILE.
+           OPEN OUTPUT JOBS-FILE.
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-JOB-COUNT
+               MOVE WS-JOBS-TABLE(I) TO JOBS-RECORD
+               WRITE JOBS-RECORD
+           END-PERFORM.
+           CLOSE JOBS-FILE.
 
 *> Prompts user the inital menu choice
        INITIAL-PROMPT-PROCEDURE.
@@ -531,9 +584,7 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "3"
-                   MOVE "Under construction." TO TO-OUTPUT-BUF
-                   PERFORM DISPLAY-AND-WRITE-OUTPUT
-
+                   PERFORM JOB-SEARCH-MENU
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "4"
@@ -558,6 +609,123 @@
                END-IF
 
            END-PERFORM.
+
+       JOB-SEARCH-MENU.
+           MOVE "N" TO MENU-EXIT-FLAG.
+           PERFORM UNTIL EXIT-MENU
+               MOVE "--- Job Search/Internship Menu ---" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "1. Post a Job/Internship" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2. Browse Jobs/Internships" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "3. Back to Main Menu" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "Enter your choice:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
+
+               EVALUATE FUNCTION TRIM(INPUT-CHOICE-BUF)
+                   WHEN "1"
+                       PERFORM POST-JOB-PROCEDURE
+                   WHEN "2"
+                       MOVE "Browse Jobs/Internships is under construction."
+                       TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   WHEN "3"
+                       SET EXIT-MENU TO TRUE
+                   WHEN OTHER
+                       MOVE "Invalid choice. Please try again."
+                       TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-EVALUATE
+           END-PERFORM.
+
+       POST-JOB-PROCEDURE.
+           MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+           ADD 1 TO WS-JOB-COUNT.
+           MOVE USER-USERNAME(LOGGED-IN-RANK)
+               TO WS-JOB-POSTER(WS-JOB-COUNT).
+
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+               MOVE "Enter Job Title:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES
+                   MOVE "Job Title cannot be blank." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD)
+               TO WS-JOB-TITLE(WS-JOB-COUNT).
+
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+               MOVE "Enter Description (max 200 chars):" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES
+                   MOVE "Description cannot be blank." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD)
+               TO WS-JOB-DESCRIPTION(WS-JOB-COUNT).
+
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+               MOVE "Enter Employer Name:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES
+                   MOVE "Employer Name cannot be blank." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD)
+               TO WS-JOB-EMPLOYER(WS-JOB-COUNT).
+
+           PERFORM WITH TEST AFTER
+                   UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
+               MOVE "Enter Location:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+               IF INPUT-RECORD = SPACES
+                   MOVE "Location cannot be blank." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-PERFORM.
+           MOVE FUNCTION TRIM(INPUT-RECORD)
+               TO WS-JOB-LOCATION(WS-JOB-COUNT).
+
+           MOVE "Enter Salary (optional, enter 'NONE' to skip):"
+               TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           PERFORM READ-INPUT-SAFELY
+           IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF.
+           IF FUNCTION UPPER-CASE(FUNCTION TRIM(INPUT-RECORD)) = "NONE"
+               MOVE SPACES TO WS-JOB-SALARY(WS-JOB-COUNT)
+           ELSE
+               MOVE FUNCTION TRIM(INPUT-RECORD)
+                   TO WS-JOB-SALARY(WS-JOB-COUNT)
+           END-IF.
+
+           PERFORM SAVE-JOBS-TO-FILE.
+
+           MOVE "Job posted successfully!" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           MOVE "----------------------------------" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
        *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
        FIND-SOMEONE-PROCEDURE.
