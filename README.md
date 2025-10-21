@@ -12,17 +12,15 @@ other.
 
 ## For running
 
-Create four files in the root of the repo.
+Create the following files in the root of the repo. The program will create them
+if they are missing.
 
-- `input.txt`
-
-- `output.txt`
-
-- `secrets.txt`
-
-- `profiles.txt`
-
-- `connections.txt`
+- `input.txt`: Contains all user input, with each command/entry on a new line.
+- `output.txt`: Mirrors all screen output.
+- `secrets.txt`: Stores user login credentials.
+- `profiles.txt`: Stores user profile data.
+- `connections.txt`: Stores pending connection requests.
+- `jobs.txt`: Stores all job postings.
 
 Compile, then `[user@hostname:directory]$ ./InCollege` to run the program with
 the given input.
