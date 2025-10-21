@@ -615,11 +615,11 @@
            PERFORM UNTIL EXIT-MENU
                MOVE "--- Job Search/Internship Menu ---" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "1. Post a Job/Internship" TO TO-OUTPUT-BUF
+               MOVE "1) Post a Job/Internship" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "2. Browse Jobs/Internships" TO TO-OUTPUT-BUF
+               MOVE "2) Browse Jobs/Internships" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "3. Back to Main Menu" TO TO-OUTPUT-BUF
+               MOVE "3) Back to Main Menu" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -636,7 +636,7 @@
                        TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    WHEN "3"
-                       SET EXIT-MENU TO TRUE
+                       PERFORM POST-LOGIN-NAVIGATION
                    WHEN OTHER
                        MOVE "Invalid choice. Please try again."
                        TO TO-OUTPUT-BUF
@@ -723,8 +723,6 @@
            PERFORM SAVE-JOBS-TO-FILE.
 
            MOVE "Job posted successfully!" TO TO-OUTPUT-BUF.
-           PERFORM DISPLAY-AND-WRITE-OUTPUT.
-           MOVE "----------------------------------" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
        *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
