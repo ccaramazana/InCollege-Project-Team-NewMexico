@@ -76,6 +76,13 @@
            05 JOB-LOCATION      PIC X(80).
            05 JOB-SALARY        PIC X(20).
 
+       FD  APPLICATIONS-FILE.
+       01  APPLICATIONS-RECORD.
+           05 APP-USERNAME      PIC X(20).
+           05 APP-JOB-TITLE     PIC X(80).
+           05 APP-JOB-EMPLOYER  PIC X(80).
+           05 APP-JOB-LOCATION  PIC X(80).
+
        WORKING-STORAGE SECTION.
 
        01  YEARS-INPUT            PIC X(20).
