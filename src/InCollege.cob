@@ -205,7 +205,7 @@
        01  NETWORK-EXIST-FLAG PIC X VALUE 'N'.
 
        01  FULL-NAME              PIC X(50).
-       01  SEARCH-NAME            PIC X(50).   
+       01  SEARCH-NAME            PIC X(50).
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
        01  PROFILE-HEADING    PIC X(30).
@@ -771,7 +771,7 @@
            MOVE "Job posted successfully!" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-       
+
        FIND-SOMEONE-PROCEDURE.
            MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -793,7 +793,7 @@
                END-STRING
 
                IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
-                   
+
                    MOVE LOGGED-IN-RANK TO PROFILE-INDEX
                    MOVE I TO LOGGED-IN-RANK
 
@@ -805,11 +805,11 @@
 
                    PERFORM PROFILE-OPTIONS
 
-                   EXIT PERFORM 
+                   EXIT PERFORM
                END-IF
            END-PERFORM
 
-           
+
            IF PROFILE-INDEX = 0
                MOVE "No user found with that name." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -842,20 +842,20 @@
                        MOVE "Connection request sent successfully." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    END-IF
-                   PERFORM POST-LOGIN-NAVIGATION   
+                   PERFORM POST-LOGIN-NAVIGATION
                WHEN "2"
-                   PERFORM POST-LOGIN-NAVIGATION  
+                   PERFORM POST-LOGIN-NAVIGATION
                WHEN OTHER
                    MOVE "Invalid choice, try again." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   PERFORM PROFILE-OPTIONS       
+                   PERFORM PROFILE-OPTIONS
            END-EVALUATE
            EXIT.
 
-       
+
 
        SEND-CONNECTION-REQUEST.
-           
+
 
            PERFORM LOAD-NETWORKS-FROM-FILE.
            MOVE "N" TO REQUEST-SUCCESS.
@@ -897,7 +897,7 @@
                END-PERFORM
            END-IF
 
-           
+
            IF CONNECTION-EXIST-FLAG = "N"
                ADD 1 TO CONNECTION-COUNT
                MOVE USER-USERNAME(LOGGED-IN-RANK) TO CON-SENDER(CONNECTION-COUNT)
@@ -906,13 +906,13 @@
                MOVE "Y" TO REQUEST-SUCCESS
            END-IF.
 
-       
+
 
        PENDING-REQUESTS-PROCEDURE.
            MOVE "----- Pending Connection Requests: -----" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-           
+
            MOVE "N" TO CONNECTION-EXIST-FLAG
 
 
@@ -923,7 +923,7 @@
                END-IF
            END-PERFORM.
 
-           
+
            IF CONNECTION-EXIST-FLAG = "N"
                MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -1095,7 +1095,7 @@
                END-STRING
                PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-      
+
        SKILLS-MENU-PROCEDURE.
 
            MOVE "N" TO MENU-EXIT-FLAG.
@@ -1596,7 +1596,7 @@
            INTO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE "---" TO TO-OUTPUT-BUF.
+           MOVE "-------------------" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            MOVE "1) Apply for this Job" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
@@ -1614,7 +1614,7 @@
                END-IF.
 
        APPLY-FOR-JOB-PROCEDURE.
-           MOVE "N" TO CONNECTION-EXIST-FLAG. 
+           MOVE "N" TO CONNECTION-EXIST-FLAG.
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-APP-COUNT
                IF (WS-APP-USERNAME(I) = USER-USERNAME(LOGGED-IN-RANK)) AND
@@ -1680,8 +1680,8 @@
            MOVE "--- Your Job Applications ---" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-           MOVE 0 TO J. 
-           MOVE "N" TO CONNECTION-EXIST-FLAG. 
+           MOVE 0 TO J.
+           MOVE "N" TO CONNECTION-EXIST-FLAG.
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-APP-COUNT
                IF WS-APP-USERNAME(I) = USER-USERNAME(LOGGED-IN-RANK)
@@ -1713,6 +1713,8 @@
 
            IF CONNECTION-EXIST-FLAG = "N"
                MOVE "You have not applied to any jobs." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "--------------------" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF.
 
