@@ -1511,6 +1511,59 @@
            END-PERFORM.
            EXIT PARAGRAPH.
 
+       BROWSE-JOBS-PROCEDURE.
+           MOVE "--- Available Job Listings ---" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+           IF WS-JOB-COUNT = 0
+               MOVE "No jobs available." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               EXIT PARAGRAPH
+           END-IF.
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-JOB-COUNT
+               MOVE SPACES TO TO-OUTPUT-BUF
+           STRING
+           I DELIMITED BY SIZE
+           ") " DELIMITED BY SIZE
+           FUNCTION TRIM(WS-JOB-TITLE(I)) DELIMITED BY SIZE
+           " at " DELIMITED BY SIZE
+           FUNCTION TRIM(WS-JOB-EMPLOYER(I)) DELIMITED BY SIZE
+           " (" DELIMITED BY SIZE
+           FUNCTION TRIM(WS-JOB-LOCATION(I)) DELIMITED BY SIZE
+           ")" DELIMITED BY SIZE
+           INTO TO-OUTPUT-BUF
+           END-STRING
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-PERFORM.
+
+           PERFORM WITH TEST AFTER
+               UNTIL (INPUT-RECORD NUMERIC AND
+               (FUNCTION NUMVAL(INPUT-RECORD) >= 0 AND
+               FUNCTION NUMVAL(INPUT-RECORD) <= WS-JOB-COUNT))
+
+               MOVE "Enter job number to view details, or 0 to go back:"
+               TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               PERFORM READ-INPUT-SAFELY
+               IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
+
+                   IF NOT (INPUT-RECORD NUMERIC AND
+                       (FUNCTION NUMVAL(INPUT-RECORD) >= 0 AND
+                       FUNCTION NUMVAL(INPUT-RECORD) <= WS-JOB-COUNT))
+                       MOVE "Invalid job number. Please try again." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+                       END-PERFORM.
+
+           MOVE FUNCTION NUMVAL(INPUT-RECORD) TO WS-JOB-CHOICE.
+           IF WS-JOB-CHOICE > 0
+               PERFORM VIEW-JOB-DETAILS-PROCEDURE
+               PERFORM BROWSE-JOBS-PROCEDURE
+           END-IF.
+
+
+
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY FUNCTION TRIM(TO-OUTPUT-BUF TRAILING).
            MOVE TO-OUTPUT-BUF TO OUTPUT-RECORD.
