@@ -663,7 +663,9 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) Browse Jobs/Internships" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "3) Back to Main Menu" TO TO-OUTPUT-BUF
+               MOVE "3) View My Applications" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "4) Back to Main Menu" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -676,10 +678,10 @@
                    WHEN "1"
                        PERFORM POST-JOB-PROCEDURE
                    WHEN "2"
-                       MOVE "Browse Jobs/Internships is under construction."
-                       TO TO-OUTPUT-BUF
-                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       PERFORM BROWSE-JOBS-PROCEDURE
                    WHEN "3"
+                       PERFORM VIEW-APPLICATIONS-REPORT
+                   WHEN "4"
                        PERFORM POST-LOGIN-NAVIGATION
                    WHEN OTHER
                        MOVE "Invalid choice. Please try again."
