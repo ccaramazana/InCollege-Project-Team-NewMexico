@@ -205,7 +205,7 @@
        01  NETWORK-EXIST-FLAG PIC X VALUE 'N'.
 
        01  FULL-NAME              PIC X(50).
-       01  SEARCH-NAME            PIC X(50).   *> input search value
+       01  SEARCH-NAME            PIC X(50).   
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
        01  PROFILE-HEADING    PIC X(30).
@@ -245,7 +245,7 @@
            CLOSE OUTPUT-FILE.
            STOP RUN.
 
-*> Loads users from file to read
+
        LOAD-USERS-FROM-FILE.
 
            INITIALIZE USER-RECORDS.
@@ -271,7 +271,7 @@
            END-PERFORM.
            CLOSE SECRETS-FILE.
 
-*> Loading Profiles from File to read
+
        LOAD-PROFILES-FROM-FILE.
            INITIALIZE USER-PROFILES.
 
@@ -292,7 +292,7 @@
            END-PERFORM
            CLOSE PROFILES-FILE.
 
-*> Load connetions from file to read.
+
        LOAD-CONNECTIONS-FROM-FILE.
            INITIALIZE CONNECTIONS-DATA.
            OPEN INPUT CONNECTIONS-FILE.
@@ -317,7 +317,7 @@
 
            CLOSE CONNECTIONS-FILE.
 
-*> Load networks from file to read.
+
        LOAD-NETWORKS-FROM-FILE.
            INITIALIZE NETWORK-DATA.
            OPEN INPUT NETWORKS-FILE.
@@ -394,7 +394,7 @@
            END-PERFORM.
            CLOSE SECRETS-FILE.
 
-*> Saves created profiles to file
+
        SAVE-PROFILES-TO-FILE.
            OPEN OUTPUT PROFILES-FILE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -420,7 +420,7 @@
            END-PERFORM.
            CLOSE JOBS-FILE.
 
-*> Prompts user the inital menu choice
+
        INITIAL-PROMPT-PROCEDURE.
 
            MOVE "Welcome to InCollege!" TO TO-OUTPUT-BUF.
@@ -486,7 +486,7 @@
 
            END-IF.
 
-*> Performs Username and Password Checks
+
        SIGN-UP-PROCEDURE.
 
            IF USER-COUNT >= 5
@@ -549,7 +549,7 @@
 
            END-IF.
 
-*> Makes sure the username is unique
+
        CHECK-USERNAME-EXISTS.
            SET USERNAME-DOESNT-EXIST TO TRUE.
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
@@ -559,7 +559,7 @@
                END-IF
            END-PERFORM.
 
-*> Checks password to make sure it fits all the requirements
+
        VALIDATE-PASSWORD-PROCEDURE.
            SET IS-VALID TO TRUE.
            INITIALIZE CAPS-COUNT, DIGIT-COUNT, SPECIAL-COUNT.
@@ -588,7 +588,7 @@
            IF CAPS-COUNT = 0 OR DIGIT-COUNT = 0 OR SPECIAL-COUNT = 0
                SET IS-NOT-VALID TO TRUE.
 
-*> The menu the user is prompted after a sucessful login
+
        POST-LOGIN-NAVIGATION.
 
            MOVE "N" TO MENU-EXIT-FLAG.
@@ -771,7 +771,7 @@
            MOVE "Job posted successfully!" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-       *> Finding someone by Search procedure - reusing VIEW-PROFILE-PROCEDURE
+       
        FIND-SOMEONE-PROCEDURE.
            MOVE "Enter the name of the person you want to find:" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -793,7 +793,7 @@
                END-STRING
 
                IF FUNCTION TRIM(SEARCH-NAME) = FUNCTION TRIM(FULL-NAME)
-                   *> Save the found user's index - DON'T swap LOGGED-IN-RANK
+                   
                    MOVE LOGGED-IN-RANK TO PROFILE-INDEX
                    MOVE I TO LOGGED-IN-RANK
 
@@ -805,17 +805,17 @@
 
                    PERFORM PROFILE-OPTIONS
 
-                   EXIT PERFORM *> Stop after first match
+                   EXIT PERFORM 
                END-IF
            END-PERFORM
 
-           *> If we didn't find anyone (PROFILE-INDEX will still be 0)
+           
            IF PROFILE-INDEX = 0
                MOVE "No user found with that name." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
            END-IF.
 
-*> Prompts user the menu when they view a profile.
+
        PROFILE-OPTIONS.
            MOVE "1) Send Connection Request" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -830,7 +830,7 @@
            END-IF
            MOVE FUNCTION TRIM(INPUT-RECORD) TO INPUT-CHOICE-BUF
 
-*> Checks input to decide what action to take.
+
            EVALUATE INPUT-CHOICE-BUF
                WHEN "1"
                    IF FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
@@ -842,26 +842,26 @@
                        MOVE "Connection request sent successfully." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    END-IF
-                   PERFORM POST-LOGIN-NAVIGATION   *> return to main menu
+                   PERFORM POST-LOGIN-NAVIGATION   
                WHEN "2"
-                   PERFORM POST-LOGIN-NAVIGATION  *> back to main menu
+                   PERFORM POST-LOGIN-NAVIGATION  
                WHEN OTHER
                    MOVE "Invalid choice, try again." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                   PERFORM PROFILE-OPTIONS       *> re-show only on invalid
+                   PERFORM PROFILE-OPTIONS       
            END-EVALUATE
            EXIT.
 
-       *> Send connection Request
+       
 
        SEND-CONNECTION-REQUEST.
-           *> Assume failure until proven success
+           
 
            PERFORM LOAD-NETWORKS-FROM-FILE.
            MOVE "N" TO REQUEST-SUCCESS.
            MOVE "N" TO CONNECTION-EXIST-FLAG.
 
-*> Check if user is in connections.txt
+
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > CONNECTION-COUNT
                IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                AND FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX))
@@ -880,7 +880,7 @@
                END-IF
            END-PERFORM.
 
-*> If not, check if user is in networks.txt
+
            IF CONNECTION-EXIST-FLAG = "N"
 
                PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
@@ -897,7 +897,7 @@
                END-PERFORM
            END-IF
 
-           *> If no conflicts, create new connection request
+           
            IF CONNECTION-EXIST-FLAG = "N"
                ADD 1 TO CONNECTION-COUNT
                MOVE USER-USERNAME(LOGGED-IN-RANK) TO CON-SENDER(CONNECTION-COUNT)
@@ -906,16 +906,16 @@
                MOVE "Y" TO REQUEST-SUCCESS
            END-IF.
 
-       *> View pending requests
+       
 
        PENDING-REQUESTS-PROCEDURE.
            MOVE "----- Pending Connection Requests: -----" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-           *> Initialize flag to track if any requests exist
+           
            MOVE "N" TO CONNECTION-EXIST-FLAG
 
-*> Check to see if there are request for logged in user.
+
            PERFORM VARYING I FROM CONNECTION-COUNT BY -1 UNTIL I < 1
                IF FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
                    MOVE "Y" TO CONNECTION-EXIST-FLAG
@@ -923,7 +923,7 @@
                END-IF
            END-PERFORM.
 
-           *> If no pending requests, display message
+           
            IF CONNECTION-EXIST-FLAG = "N"
                MOVE "You have no pending connection requests." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -933,7 +933,7 @@
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
            EXIT.
 
-*> Prompts user for input on what to do for that pending request.
+
        PROCESS-REQUEST-PROCEDURE.
            PERFORM USER-CHOICE-PROCEDURE.
 
@@ -963,14 +963,14 @@
            PERFORM REMOVE-PENDING-PROCEDURE
            PERFORM SAVE-CONNECTIONS-TO-FILE.
 
-*> Remove current pending connection from connections.txt
+
        REMOVE-PENDING-PROCEDURE.
            PERFORM VARYING J FROM I BY 1 UNTIL J >= CONNECTION-COUNT
                MOVE CONNECTIONS-TABLE(J + 1) TO CONNECTIONS-TABLE(J)
            END-PERFORM
            SUBTRACT 1 FROM CONNECTION-COUNT.
 
-*> Add connection to networks.txt
+
        ESTABLISHED-NETWORK-PROCEDURE.
            OPEN EXTEND NETWORKS-FILE.
 
@@ -984,7 +984,7 @@
            WRITE NETWORKS-RECORD.
            CLOSE NETWORKS-FILE.
 
-*> Prompts user for a input
+
        USER-CHOICE-PROCEDURE.
 
            MOVE 0 TO PROFILE-INDEX
@@ -1039,7 +1039,7 @@
                END-IF
            END-IF.
 
-*> View networks the logged in user has.
+
        VIEW-NETWORK-PROCEDURE.
            PERFORM LOAD-NETWORKS-FROM-FILE.
 
@@ -1078,7 +1078,7 @@
            MOVE "----------------------------------------" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-*> Print helper function
+
        DISPLAY-NETWORKS-PROCEDURE.
            MOVE SPACES TO TO-OUTPUT-BUF
                STRING
@@ -1095,7 +1095,7 @@
                END-STRING
                PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-      *> Skils menu after selecting the skills option
+      
        SKILLS-MENU-PROCEDURE.
 
            MOVE "N" TO MENU-EXIT-FLAG.
@@ -1132,7 +1132,7 @@
            END-PERFORM.
 
 
-*> Used to create profiles for the user
+
        CREATE-PROFILE-PROCEDURE.
 
            MOVE "--- Create/Edit Profile ---" TO TO-OUTPUT-BUF.
@@ -1140,7 +1140,7 @@
 
            MOVE "N" TO PROFILE-CREATION-FAILURE-FLAG.
 
-*> All these performs make sure that the users enters a valid input for each field or else it will reprompt them.
+
            PERFORM WITH TEST AFTER
                    UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
                MOVE "Enter First Name:" TO TO-OUTPUT-BUF
@@ -1230,7 +1230,7 @@
            MOVE "Profile saved successfully!" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
            .
-*> Function used to view profile
+
        VIEW-PROFILE-PROCEDURE.
            MOVE PROFILE-HEADING TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
@@ -1263,7 +1263,7 @@
            END-IF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-*> Checks if there was any input for About Me, if no then don't print
+
 
            IF FUNCTION LENGTH(FUNCTION TRIM(USER-ABOUT-ME(LOGGED-IN-RANK))) > 0
                MOVE SPACES TO TO-OUTPUT-BUF
@@ -1274,7 +1274,7 @@
            END-IF
 
 
-*> Prints out all experiences
+
 
            PERFORM VARYING EXP-SUBS FROM 1 BY 1 UNTIL EXP-SUBS > 3
 
@@ -1311,7 +1311,7 @@
 
            END-PERFORM.
 
-*> Prints out all educations
+
 
            PERFORM VARYING EDU-SUBS FROM 1 BY 1 UNTIL EDU-SUBS > 3
 
@@ -1344,7 +1344,7 @@
            MOVE "--------------------" TO TO-OUTPUT-BUF.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
 
-*> Function used to create and edit experiences
+
        EDIT-EXPERIENCES-PROCEDURE.
            PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
                MOVE SPACES TO EXP-TITLE      (LOGGED-IN-RANK, J)
@@ -1367,7 +1367,7 @@
                ADD 1 TO COUNT-EXP
                MOVE COUNT-EXP TO J
 
-*> All these perform until asks the user to input a valid input or else it reprompts
+
 
                PERFORM WITH TEST AFTER
                        UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
@@ -1428,7 +1428,7 @@
            END-PERFORM.
            EXIT PARAGRAPH.
 
-*> Function used to create and edit education
+
        EDIT-EDUCATION-PROCEDURE.
            PERFORM VARYING J FROM 1 BY 1 UNTIL J > 3
                MOVE SPACES TO EDU-DEGREE    (LOGGED-IN-RANK, J)
@@ -1450,7 +1450,7 @@
                ADD 1 TO COUNT-EDU
                MOVE COUNT-EDU TO J
 
-*> All these perform until asks the user to input a valid input or else it reprompts
+
 
                 PERFORM WITH TEST AFTER
                        UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
