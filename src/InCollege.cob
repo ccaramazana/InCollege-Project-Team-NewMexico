@@ -1538,9 +1538,9 @@
            END-PERFORM.
 
            PERFORM WITH TEST AFTER
-               UNTIL (INPUT-RECORD NUMERIC AND
-               (FUNCTION NUMVAL(INPUT-RECORD) >= 0 AND
-               FUNCTION NUMVAL(INPUT-RECORD) <= WS-JOB-COUNT))
+               UNTIL (FUNCTION TRIM(INPUT-RECORD) IS NUMERIC AND
+               (FUNCTION NUMVAL(FUNCTION TRIM(INPUT-RECORD)) >= 0 AND
+               FUNCTION NUMVAL(FUNCTION TRIM(INPUT-RECORD)) <= WS-JOB-COUNT))
 
                MOVE "Enter job number to view details, or 0 to go back:"
                TO TO-OUTPUT-BUF
@@ -1548,15 +1548,15 @@
                PERFORM READ-INPUT-SAFELY
                IF EXIT-PROGRAM PERFORM EXIT-EARLY END-IF
 
-                   IF NOT (INPUT-RECORD NUMERIC AND
-                       (FUNCTION NUMVAL(INPUT-RECORD) >= 0 AND
-                       FUNCTION NUMVAL(INPUT-RECORD) <= WS-JOB-COUNT))
+                   IF NOT (FUNCTION TRIM(INPUT-RECORD) IS NUMERIC AND
+                       (FUNCTION NUMVAL(FUNCTION TRIM(INPUT-RECORD)) >= 0 AND
+                       FUNCTION NUMVAL(FUNCTION TRIM(INPUT-RECORD)) <= WS-JOB-COUNT))
                        MOVE "Invalid job number. Please try again." TO TO-OUTPUT-BUF
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    END-IF
                        END-PERFORM.
 
-           MOVE FUNCTION NUMVAL(INPUT-RECORD) TO WS-JOB-CHOICE.
+           MOVE FUNCTION NUMVAL(FUNCTION TRIM(INPUT-RECORD)) TO WS-JOB-CHOICE.
            IF WS-JOB-CHOICE > 0
                PERFORM VIEW-JOB-DETAILS-PROCEDURE
                PERFORM BROWSE-JOBS-PROCEDURE
