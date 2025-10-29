@@ -239,6 +239,7 @@
            PERFORM LOAD-PROFILES-FROM-FILE.
            PERFORM LOAD-CONNECTIONS-FROM-FILE.
            PERFORM LOAD-JOBS-FROM-FILE.
+           PERFORM LOAD-APPLICATIONS-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
 
            CLOSE INPUT-FILE.
@@ -362,6 +363,28 @@
                END-READ
            END-PERFORM.
            CLOSE JOBS-FILE.
+
+        LOAD-APPLICATIONS-FROM-FILE.
+           INITIALIZE WS-APPLICATIONS-DATA.
+           OPEN INPUT APPLICATIONS-FILE.
+           IF APP-FILE-STATUS = "35"
+               OPEN OUTPUT APPLICATIONS-FILE
+               CLOSE APPLICATIONS-FILE
+               OPEN INPUT APPLICATIONS-FILE
+               MOVE "00" TO APP-FILE-STATUS
+           END-IF.
+           SET NOT-END-OF-FILE TO TRUE.
+           PERFORM UNTIL END-OF-FILE
+               READ APPLICATIONS-FILE
+                   AT END
+                       SET END-OF-FILE TO TRUE
+                   NOT AT END
+                       ADD 1 TO WS-APP-COUNT
+                       MOVE APPLICATIONS-RECORD
+                       TO WS-APPLICATIONS-TABLE(WS-APP-COUNT)
+                   END-READ
+               END-PERFORM.
+           CLOSE APPLICATIONS-FILE.
 
        SAVE-USERS-TO-FILE.
            OPEN OUTPUT SECRETS-FILE.
