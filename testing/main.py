@@ -17,6 +17,8 @@ OUTPUT_FILE = PROJECT_ROOT / "output.txt"
 SECRETS_FILE = PROJECT_ROOT / "secrets.txt"
 PROFILES_FILE = PROJECT_ROOT / "profiles.txt"
 CONNECTIONS_FILE = PROJECT_ROOT / "connections.txt"
+JOBS_FILE = PROJECT_ROOT / "jobs.txt"
+NETWORKS_FILE = PROJECT_ROOT / "networks.txt"
 COBOL_SOURCE_FILE = PROJECT_ROOT / "src" / "InCollege.cob"
 
 # Default paths for CLI options and base files.
@@ -24,6 +26,8 @@ DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
 DEFAULT_SECRETS_BASE = SCRIPT_DIR / "secrets.base.txt"
 DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
 DEFAULT_CONNECTIONS_BASE = SCRIPT_DIR / "connections.base.txt"
+DEFAULT_JOBS_BASE = SCRIPT_DIR / "jobs.base.txt"
+DEFAULT_NETWORKS_BASE = SCRIPT_DIR / "networks.base.txt"
 
 # Create the Typer app instance.
 app = typer.Typer(
@@ -107,7 +111,25 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_CONNECTIONS_BASE, CONNECTIONS_FILE)
         print(f"  - Using base connections from: {DEFAULT_CONNECTIONS_BASE}")
 
-    # 5. Handle mandatory input.txt.
+    # 5. Handle jobs.txt: Use test-specific file or fall back to base.
+    test_jobs_file = test_case_dir / "jobs.txt"
+    if test_jobs_file.exists():
+        shutil.copy(test_jobs_file, JOBS_FILE)
+        print(f"  - Using test-specific jobs from: {test_jobs_file}")
+    else:
+        shutil.copy(DEFAULT_JOBS_BASE, JOBS_FILE)
+        print(f"  - Using base jobs from: {DEFAULT_JOBS_BASE}")
+
+    # 6. Handle networks.txt: Use test-specific file or fall back to base.
+    test_networks_file = test_case_dir / "networks.txt"
+    if test_networks_file.exists():
+        shutil.copy(test_networks_file, NETWORKS_FILE)
+        print(f"  - Using test-specific networks from: {test_networks_file}")
+    else:
+        shutil.copy(DEFAULT_NETWORKS_BASE, NETWORKS_FILE)
+        print(f"  - Using base networks from: {DEFAULT_NETWORKS_BASE}")
+
+    # 7. Handle mandatory input.txt.
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
         typer.secho(f"ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
