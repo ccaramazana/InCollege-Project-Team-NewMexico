@@ -6,12 +6,9 @@ import os
 from pathlib import Path
 from typing_extensions import Annotated
 
-# --- Configuration ---
-# Dynamically determine the project root directory based on this script's location.
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROJECT_ROOT = SCRIPT_DIR.parent
 
-# Define all paths as absolute paths relative to the project root.
 INPUT_FILE = PROJECT_ROOT / "input.txt"
 OUTPUT_FILE = PROJECT_ROOT / "output.txt"
 SECRETS_FILE = PROJECT_ROOT / "secrets.txt"
@@ -19,17 +16,17 @@ PROFILES_FILE = PROJECT_ROOT / "profiles.txt"
 CONNECTIONS_FILE = PROJECT_ROOT / "connections.txt"
 JOBS_FILE = PROJECT_ROOT / "jobs.txt"
 NETWORKS_FILE = PROJECT_ROOT / "networks.txt"
+APPLICATIONS_FILE = PROJECT_ROOT / "applications.txt"
 COBOL_SOURCE_FILE = PROJECT_ROOT / "src" / "InCollege.cob"
 
-# Default paths for CLI options and base files.
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
 DEFAULT_SECRETS_BASE = SCRIPT_DIR / "secrets.base.txt"
 DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
 DEFAULT_CONNECTIONS_BASE = SCRIPT_DIR / "connections.base.txt"
 DEFAULT_JOBS_BASE = SCRIPT_DIR / "jobs.base.txt"
+DEFAULT_APPLICATIONS_BASE = SCRIPT_DIR / "applications.base.txt"
 DEFAULT_NETWORKS_BASE = SCRIPT_DIR / "networks.base.txt"
 
-# Create the Typer app instance.
 app = typer.Typer(
     help="A command-line test runner for the InCollege COBOL application.",
     add_completion=False,
@@ -39,27 +36,25 @@ app = typer.Typer(
 def compile_cobol_program():
     """Compiles the COBOL source code into an executable."""
     print("... compiling COBOL source ...")
-    
+
     if not COBOL_SOURCE_FILE.exists():
         typer.secho(f"ERROR: COBOL source file not found at '{COBOL_SOURCE_FILE}'", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     try:
-        # Command to compile the COBOL source file.
         command = ["cobc", "-x", "-free", str(COBOL_SOURCE_FILE.relative_to(PROJECT_ROOT))]
         result = subprocess.run(
             command,
             capture_output=True,
             text=True,
-            cwd=PROJECT_ROOT  # Run the command from the project root.
+            cwd=PROJECT_ROOT
         )
 
-        # Check if the compilation was successful.
         if result.returncode != 0:
             typer.secho("ERROR: COBOL compilation failed.", fg=typer.colors.RED)
             typer.secho(f"--- Compiler Output (STDERR) ---\n{result.stderr}", fg=typer.colors.YELLOW)
             raise typer.Exit(code=1)
-        
+
         print("  - Compilation successful.")
 
     except FileNotFoundError:
@@ -78,13 +73,11 @@ def prepare_test_files(test_case_dir: Path):
     """
     print("...  preparing test environment ...")
 
-    # 1. Clear the output file for a clean run.
     if OUTPUT_FILE.exists():
         OUTPUT_FILE.unlink()
     OUTPUT_FILE.touch()
     print(f"  - Cleared {OUTPUT_FILE}")
 
-    # 2. Handle secrets.txt: Use test-specific file or fall back to base.
     test_secrets_file = test_case_dir / "secrets.txt"
     if test_secrets_file.exists():
         shutil.copy(test_secrets_file, SECRETS_FILE)
@@ -93,7 +86,6 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_SECRETS_BASE, SECRETS_FILE)
         print(f"  - Using base secrets from: {DEFAULT_SECRETS_BASE}")
 
-    # 3. Handle profiles.txt: Use test-specific file or fall back to base.
     test_profiles_file = test_case_dir / "profiles.txt"
     if test_profiles_file.exists():
         shutil.copy(test_profiles_file, PROFILES_FILE)
@@ -102,7 +94,6 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_PROFILES_BASE, PROFILES_FILE)
         print(f"  - Using base profiles from: {DEFAULT_PROFILES_BASE}")
 
-    # 4. Handle connections.txt: Use test-specific file or fall back to base.
     test_connections_file = test_case_dir / "connections.txt"
     if test_connections_file.exists():
         shutil.copy(test_connections_file, CONNECTIONS_FILE)
@@ -111,7 +102,6 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_CONNECTIONS_BASE, CONNECTIONS_FILE)
         print(f"  - Using base connections from: {DEFAULT_CONNECTIONS_BASE}")
 
-    # 5. Handle jobs.txt: Use test-specific file or fall back to base.
     test_jobs_file = test_case_dir / "jobs.txt"
     if test_jobs_file.exists():
         shutil.copy(test_jobs_file, JOBS_FILE)
@@ -120,7 +110,6 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_JOBS_BASE, JOBS_FILE)
         print(f"  - Using base jobs from: {DEFAULT_JOBS_BASE}")
 
-    # 6. Handle networks.txt: Use test-specific file or fall back to base.
     test_networks_file = test_case_dir / "networks.txt"
     if test_networks_file.exists():
         shutil.copy(test_networks_file, NETWORKS_FILE)
@@ -129,14 +118,20 @@ def prepare_test_files(test_case_dir: Path):
         shutil.copy(DEFAULT_NETWORKS_BASE, NETWORKS_FILE)
         print(f"  - Using base networks from: {DEFAULT_NETWORKS_BASE}")
 
-    # 7. Handle mandatory input.txt.
+    test_applications_file = test_case_dir / "applications.txt"
+    if test_applications_file.exists():
+        shutil.copy(test_applications_file, APPLICATIONS_FILE)
+        print(f"  - Using test-specific applications from: {test_applications_file}")
+    else:
+        shutil.copy(DEFAULT_APPLICATIONS_BASE, APPLICATIONS_FILE)
+        print(f"  - Using base applications from: {DEFAULT_APPLICATIONS_BASE}")
+
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
         typer.secho(f"ERROR: Mandatory 'input.txt' not found in '{test_case_dir}'", fg=typer.colors.RED)
         raise typer.Exit(code=1)
     shutil.copy(test_input_file, INPUT_FILE)
     print(f"  - Copied test input from: {test_input_file}")
-
 
 @app.command()
 def run(
@@ -156,24 +151,21 @@ def run(
 ):
     """Run a single test case from a directory against the COBOL application."""
     print(f"--- Starting test: {test_case_dir.name} ---")
-    # --- 1. COMPILE PHASE ---
+
     if not no_compile:
         try:
             compile_cobol_program()
         except typer.Exit as e:
-            # The compile function already prints the error, so just re-raise to exit.
             raise e
     else:
         print("... skipping compilation step ...")
 
-    # --- 2. SETUP PHASE ---
     try:
         prepare_test_files(test_case_dir)
     except Exception as e:
         typer.secho(f"ERROR during setup: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    # --- 3. EXECUTION PHASE ---
     print(f"... executing '{cobol_executable}' ...\n")
     if not os.access(cobol_executable, os.X_OK):
         typer.secho(f"ERROR: Executable '{cobol_executable}' is not executable.", fg=typer.colors.RED)
@@ -197,7 +189,6 @@ def run(
         typer.secho(f"An unexpected error occurred: {e}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
-    # --- 4. TEARDOWN / RESULTS PHASE ---
     print("\n... execution finished ...")
     try:
         test_output_dest = test_case_dir / "output.txt"
@@ -206,12 +197,9 @@ def run(
     except Exception as e:
         typer.secho(f"WARNING: Could not copy output file to test directory: {e}", fg=typer.colors.YELLOW)
 
-
     typer.secho(f"Test '{test_case_dir.name}' completed successfully.", fg=typer.colors.GREEN)
     print(f"Check '{test_case_dir / 'output.txt'}' for the captured program output.")
     print("--------------------------------------------------")
 
-
 if __name__ == "__main__":
     app()
-
