@@ -23,6 +23,9 @@
            SELECT JOBS-FILE ASSIGN TO "jobs.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS JOBS-FILE-STATUS.
+           SELECT APPLICATIONS-FILE ASSIGN TO "applications.txt"
+               ORGANIZATION IS LINE SEQUENTIAL
+               FILE STATUS IS APP-FILE-STATUS.
 
 
        DATA DIVISION.
