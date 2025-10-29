@@ -1670,6 +1670,52 @@
                    SET EXIT-PROGRAM TO TRUE
            END-READ.
 
+
+       VIEW-APPLICATIONS-REPORT.
+           MOVE "--- Your Job Applications ---" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+           MOVE 0 TO J. 
+           MOVE "N" TO CONNECTION-EXIST-FLAG. 
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-APP-COUNT
+               IF WS-APP-USERNAME(I) = USER-USERNAME(LOGGED-IN-RANK)
+                   MOVE "Y" TO CONNECTION-EXIST-FLAG
+                   ADD 1 TO J
+
+           STRING "Job Title: " DELIMITED BY SIZE
+           FUNCTION TRIM(WS-APP-JOB-TITLE(I))
+           INTO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+           STRING "Employer: " DELIMITED BY SIZE
+           FUNCTION TRIM(WS-APP-JOB-EMPLOYER(I))
+           INTO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+           STRING "Location: " DELIMITED BY SIZE
+           FUNCTION TRIM(WS-APP-JOB-LOCATION(I))
+           INTO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+           MOVE "--------------------" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF
+           END-PERFORM.
+
+           IF CONNECTION-EXIST-FLAG = "N"
+               MOVE "You have not applied to any jobs." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               END-IF.
+
+           MOVE SPACES TO TO-OUTPUT-BUF.
+           STRING "Total Applications: " DELIMITED BY SIZE
+           J DELIMITED BY SIZE
+           INTO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+           MOVE "--------------------" TO TO-OUTPUT-BUF.
+           PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
        EXIT-EARLY.
            CLOSE INPUT-FILE.
            CLOSE OUTPUT-FILE.
