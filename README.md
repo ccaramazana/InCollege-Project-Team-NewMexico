@@ -12,15 +12,16 @@ other.
 
 ## For running
 
-Create the following files in the root of the repo. The program will create them
-if they are missing.
+Create the following files in the root of the repo (they may be left blank):
 
-- `input.txt`: Contains all user input, with each command/entry on a new line.
-- `output.txt`: Mirrors all screen output.
-- `secrets.txt`: Stores user login credentials.
-- `profiles.txt`: Stores user profile data.
-- `connections.txt`: Stores pending connection requests.
-- `jobs.txt`: Stores all job postings.
+- `input.txt`
+- `output.txt`
+- `secrets.txt`
+- `profiles.txt`
+- `connections.txt`
+- `networks.txt`
+- `jobs.txt`
+- `applications.txt`
 
 Compile, then `[user@hostname:directory]$ ./InCollege` to run the program with
 the given input.
@@ -30,16 +31,34 @@ the given input.
 Make sure to have [`typer`](https://typer.tiangolo.com/) installed locally on
 your Python environment.
 
-`testing/secrets.base.txt`, `testing/profiles.base.txt`, and
-`testing/connections.base.txt` are the template files used for `secrets.txt`,
-`profiles.txt`, and `connections.txt` during testing.
+- `testing/secrets.base.txt`
+- `testing/profiles.base.txt`
+- `testing/connections.base.txt`
+- `testing/networks.base.txt`
+- `testing/jobs.base.txt`
+- `testing/applications.base.txt`
+
+are template files: during testing, they replace the contents of
+
+- `secrets.txt`
+- `profiles.txt`
+- `connections.txt`
+- `networks.txt`
+- `jobs.txt`
+- `applications.txt`
 
 To create a test, create a folder. You must put inside that folder a file named
-`input.txt`, which will be the input used for the test. You can also put files
-named `profiles.txt`, `secrets.txt`, and `connections.txt` inside that folder,
-and those will override the `testing/secrets.base.txt`,
-`testing/profiles.base.txt`, and `testing/connections.base.txt` templates during
-testing, but you don't have to.
+`input.txt`, which will be the input used for the test. You may also override
+any `.base.txt` file by putting one of
+
+- `secrets.txt`
+- `profiles.txt`
+- `connections.txt`
+- `networks.txt`
+- `jobs.txt`
+- `applications.txt`
+
+inside that folder.
 
 Then, run `[user@hostname:directory]$ python testing/main.py
 /path/to/your/test/folder/here` to test. You can view the output in a
