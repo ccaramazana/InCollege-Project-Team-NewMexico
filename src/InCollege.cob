@@ -26,6 +26,9 @@
            SELECT APPLICATIONS-FILE ASSIGN TO "applications.txt"
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS APP-FILE-STATUS.
+           SELECT MESSAGES-FILE ASSIGN TO "messages.txt"
+               ORGANIZATION IS SEQUENTIAL
+               FILE STATUS IS MESSAGES-FILE-STATUS.
 
        DATA DIVISION.
 
@@ -60,6 +63,7 @@
        01  CONNECTIONS-RECORD.
            05 SENDER-USERNAME PIC X(20).
            05 RECEIVER-USERNAME PIC X(20).
+           05 CONN-STATUS PIC X(20).
 
        FD  NETWORKS-FILE.
        01  NETWORKS-RECORD.
@@ -81,6 +85,14 @@
            05 APP-JOB-TITLE     PIC X(80).
            05 APP-JOB-EMPLOYER  PIC X(80).
            05 APP-JOB-LOCATION  PIC X(80).
+
+       FD  MESSAGES-FILE.
+       01  MESSAGES-RECORD.
+           05 MSG-SENDER           PIC X(20).
+           05 MSG-RECIPIENT        PIC X(20).
+           05 MSG-CONTENT          PIC X(200).
+           05 MSG-TIMESTAMP        PIC X(19).
+        
 
        WORKING-STORAGE SECTION.
 
@@ -226,6 +238,28 @@
 
        01  WS-JOB-CHOICE       PIC 99.
 
+       01  MESSAGES-FILE-STATUS    PIC XX VALUE SPACES.
+       01  WS-MESSAGES-DATA.
+           05 WS-MESSAGES-TABLE OCCURS 50 TIMES.
+               10 WS-MSG-SENDER           PIC X(20).
+               10 WS-MSG-RECIPIENT        PIC X(20).
+               10 WS-MSG-CONTENT          PIC X(200).
+               10 WS-MSG-TIMESTAMP        PIC X(19).
+       01  MESSAGE-COUNT           PIC 99 VALUE 0.
+       01  RECIPIENT-USERNAME      PIC X(20).
+       01  MESSAGE-CONTENT         PIC X(200).
+       01  CONNECTION-VALID-FLAG   PIC X VALUE 'N'.
+       01  MESSAGES-MENU-EXIT-FLAG PIC X VALUE 'N'.
+
+       01 CONNECTION-INDEX         PIC 99 VALUE 0.
+       01 CURRENT-USER            PIC X(20).
+
+       01  WS-CONNECTIONS-DATA.
+           05 WS-CONNECTIONS-TABLE OCCURS 25 TIMES.
+               10 WS-CONN-SENDER PIC X(20).
+               10 WS-CONN-RECEIVER PIC X(20).
+               10 WS-CONN-STATUS PIC X(20).
+
 
        PROCEDURE DIVISION.
 
@@ -239,6 +273,7 @@
            PERFORM LOAD-CONNECTIONS-FROM-FILE.
            PERFORM LOAD-JOBS-FROM-FILE.
            PERFORM LOAD-APPLICATIONS-FROM-FILE.
+           PERFORM LOAD-MESSAGES-FROM-FILE.
            PERFORM INITIAL-PROMPT-PROCEDURE.
 
            CLOSE INPUT-FILE.
@@ -311,7 +346,9 @@
                        SET END-OF-FILE TO TRUE
                    NOT AT END
                        ADD 1 TO CONNECTION-COUNT
-                       MOVE CONNECTIONS-RECORD TO CONNECTIONS-TABLE(CONNECTION-COUNT)
+                       MOVE SENDER-USERNAME TO WS-CONN-SENDER(CONNECTION-COUNT)
+                       MOVE RECEIVER-USERNAME TO WS-CONN-RECEIVER(CONNECTION-COUNT)
+                       MOVE CONN-STATUS TO WS-CONN-STATUS(CONNECTION-COUNT)
                END-READ
            END-PERFORM
 
@@ -472,7 +509,7 @@
            END-PERFORM.
 
            IF LOGIN-SUCCESSFUL
-
+               MOVE LOGIN-USERNAME TO CURRENT-USER
                MOVE "You have successfully logged in." TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                PERFORM POST-LOGIN-NAVIGATION
@@ -608,7 +645,9 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "7) View My Network" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               MOVE "8) Log Out" TO TO-OUTPUT-BUF
+               MOVE "8) Messages" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "9) Log Out" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -649,6 +688,10 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "8"
+                   PERFORM MESSAGES-MENU-PROCEDURE
+               END-IF
+
+               IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "9"
                    SET EXIT-MENU TO TRUE
                END-IF
 
@@ -689,6 +732,132 @@
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-EVALUATE
            END-PERFORM.
+
+        MESSAGES-MENU-PROCEDURE.
+           SET MESSAGES-MENU-EXIT-FLAG TO 'N'
+           PERFORM UNTIL MESSAGES-MENU-EXIT-FLAG = 'Y'
+               MOVE "--- Messages Menu ---" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "1) Send a New Message" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2) View My Messages" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "3) Back to Main Menu" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "Enter your choice:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               
+               READ INPUT-FILE
+                   AT END
+                       SET MESSAGES-MENU-EXIT-FLAG TO 'Y'
+                   NOT AT END
+                       MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
+                       EVALUATE FUNCTION TRIM(INPUT-CHOICE-BUF)
+                           WHEN "1"
+                               PERFORM SEND-MESSAGE-PROCEDURE
+                           WHEN "2"
+                               MOVE "View My Messages is under construction." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           WHEN "3"
+                               SET MESSAGES-MENU-EXIT-FLAG TO 'Y'
+                           WHEN OTHER
+                               MOVE "Invalid choice." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       END-EVALUATE
+               END-READ
+           END-PERFORM.
+
+       SEND-MESSAGE-PROCEDURE.
+           MOVE "Enter recipient's username (must be a connection):" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           
+           READ INPUT-FILE
+               AT END
+                   MOVE "Error reading input." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               NOT AT END
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO RECIPIENT-USERNAME
+                   PERFORM VALIDATE-RECIPIENT-CONNECTION
+                   
+                   IF CONNECTION-VALID-FLAG = 'Y'
+                       MOVE "Enter your message (max 200 chars):" TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       
+                       READ INPUT-FILE
+                           AT END
+                               MOVE "Error reading message content." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           NOT AT END
+                               MOVE FUNCTION TRIM(INPUT-RECORD) TO MESSAGE-CONTENT
+                               PERFORM SAVE-MESSAGE-TO-FILE
+                               MOVE "Message sent to " TO TO-OUTPUT-BUF
+                               STRING TO-OUTPUT-BUF DELIMITED BY SIZE
+                                      FUNCTION TRIM(RECIPIENT-USERNAME) DELIMITED BY SIZE
+                                      " successfully!" DELIMITED BY SIZE
+                                      INTO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                               MOVE "---------------------" TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       END-READ
+                   ELSE
+                       MOVE "You can only message users you are connected with." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+           END-READ.
+
+       VALIDATE-RECIPIENT-CONNECTION.
+           SET CONNECTION-VALID-FLAG TO 'N'
+           PERFORM VARYING CONNECTION-INDEX FROM 1 BY 1 
+               UNTIL CONNECTION-INDEX > CONNECTION-COUNT
+               IF (CON-SENDER(CONNECTION-INDEX) = CURRENT-USER
+                   AND WS-CONN-RECEIVER(CONNECTION-INDEX) = RECIPIENT-USERNAME
+                   AND WS-CONN-STATUS(CONNECTION-INDEX) = "ACCEPTED")
+                   OR
+                   (WS-CONN-RECEIVER(CONNECTION-INDEX) = CURRENT-USER
+                   AND WS-CONN-SENDER(CONNECTION-INDEX) = RECIPIENT-USERNAME
+                   AND WS-CONN-STATUS(CONNECTION-INDEX) = "ACCEPTED")
+                   SET CONNECTION-VALID-FLAG TO 'Y'
+                   EXIT PERFORM
+               END-IF
+           END-PERFORM.
+
+       SAVE-MESSAGE-TO-FILE.
+           OPEN EXTEND MESSAGES-FILE
+           IF MESSAGES-FILE-STATUS = "00"
+               MOVE CURRENT-USER TO MSG-SENDER
+               MOVE RECIPIENT-USERNAME TO MSG-RECIPIENT
+               MOVE MESSAGE-CONTENT TO MSG-CONTENT
+               MOVE FUNCTION CURRENT-DATE TO MSG-TIMESTAMP
+               WRITE MESSAGES-RECORD
+               CLOSE MESSAGES-FILE
+           ELSE
+               MOVE "Error saving message." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF.
+
+       LOAD-MESSAGES-FROM-FILE.
+           OPEN INPUT MESSAGES-FILE
+           IF MESSAGES-FILE-STATUS = "00"
+               SET MESSAGE-COUNT TO 0
+               PERFORM UNTIL MESSAGES-FILE-STATUS NOT = "00"
+                   READ MESSAGES-FILE
+                       AT END
+                           EXIT PERFORM
+                       NOT AT END
+                           ADD 1 TO MESSAGE-COUNT
+                           MOVE MSG-SENDER TO WS-MSG-SENDER(MESSAGE-COUNT)
+                           MOVE MSG-RECIPIENT TO WS-MSG-RECIPIENT(MESSAGE-COUNT)
+                           MOVE MSG-CONTENT TO WS-MSG-CONTENT(MESSAGE-COUNT)
+                           MOVE MSG-TIMESTAMP TO WS-MSG-TIMESTAMP(MESSAGE-COUNT)
+               END-PERFORM
+               CLOSE MESSAGES-FILE
+           END-IF.
+
+
+
+
+
+
 
        POST-JOB-PROCEDURE.
            MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
