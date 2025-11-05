@@ -17,6 +17,7 @@ CONNECTIONS_FILE = PROJECT_ROOT / "connections.txt"
 JOBS_FILE = PROJECT_ROOT / "jobs.txt"
 NETWORKS_FILE = PROJECT_ROOT / "networks.txt"
 APPLICATIONS_FILE = PROJECT_ROOT / "applications.txt"
+MESSAGES_FILE = PROJECT_ROOT / "messages.txt"
 COBOL_SOURCE_FILE = PROJECT_ROOT / "src" / "InCollege.cob"
 
 DEFAULT_EXECUTABLE = PROJECT_ROOT / "InCollege"
@@ -25,6 +26,7 @@ DEFAULT_PROFILES_BASE = SCRIPT_DIR / "profiles.base.txt"
 DEFAULT_CONNECTIONS_BASE = SCRIPT_DIR / "connections.base.txt"
 DEFAULT_JOBS_BASE = SCRIPT_DIR / "jobs.base.txt"
 DEFAULT_APPLICATIONS_BASE = SCRIPT_DIR / "applications.base.txt"
+DEFAULT_MESSAGES_BASE = SCRIPT_DIR / "messages.base.txt"
 DEFAULT_NETWORKS_BASE = SCRIPT_DIR / "networks.base.txt"
 
 app = typer.Typer(
@@ -125,6 +127,14 @@ def prepare_test_files(test_case_dir: Path):
     else:
         shutil.copy(DEFAULT_APPLICATIONS_BASE, APPLICATIONS_FILE)
         print(f"  - Using base applications from: {DEFAULT_APPLICATIONS_BASE}")
+
+    test_messages_file = test_case_dir / "messages.txt"
+    if test_messages_file.exists():
+        shutil.copy(test_messages_file, MESSAGES_FILE)
+        print(f"  - Using test-specific messages from: {test_messages_file}")
+    else:
+        shutil.copy(DEFAULT_MESSAGES_BASE, MESSAGES_FILE)
+        print(f"  - Using base messages from: {DEFAULT_MESSAGES_BASE}")
 
     test_input_file = test_case_dir / "input.txt"
     if not test_input_file.exists():
