@@ -22,6 +22,7 @@ Create the following files in the root of the repo (they may be left blank):
 - `networks.txt`
 - `jobs.txt`
 - `applications.txt`
+- `messages.txt`
 
 Compile, then `[user@hostname:directory]$ ./InCollege` to run the program with
 the given input.
@@ -37,6 +38,7 @@ your Python environment.
 - `testing/networks.base.txt`
 - `testing/jobs.base.txt`
 - `testing/applications.base.txt`
+- `testing/messages.base.txt`
 
 are template files: during testing, they replace the contents of
 
@@ -46,6 +48,7 @@ are template files: during testing, they replace the contents of
 - `networks.txt`
 - `jobs.txt`
 - `applications.txt`
+- `messages.txt`
 
 To create a test, create a folder. You must put inside that folder a file named
 `input.txt`, which will be the input used for the test. You may also override
@@ -57,6 +60,7 @@ any `.base.txt` file by putting one of
 - `networks.txt`
 - `jobs.txt`
 - `applications.txt`
+- `messages.txt`
 
 inside that folder.
 
