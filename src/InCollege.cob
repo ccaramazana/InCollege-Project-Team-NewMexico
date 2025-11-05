@@ -706,7 +706,8 @@
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "8"
-                   PERFORM MESSAGES-MENU-PROCEDURE
+                   MOVE "TEMP" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
 
                IF FUNCTION TRIM(INPUT-CHOICE-BUF) = "9"
