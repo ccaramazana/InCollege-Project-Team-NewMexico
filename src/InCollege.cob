@@ -68,7 +68,7 @@
        FD  NETWORKS-FILE.
        01  NETWORKS-RECORD.
            05 NETWORKS-SENDER PIC X(20).
-           05 NETWORKS-RECIEVER PIC X(20).
+           05 NETWORKS-RECEIVER PIC X(20).
 
        FD  JOBS-FILE.
        01  JOBS-RECORD.
@@ -260,6 +260,16 @@
                10 WS-CONN-RECEIVER PIC X(20).
                10 WS-CONN-STATUS PIC X(20).
 
+        01  INPUT-FIRST-NAME        PIC X(20).
+        01  INPUT-LAST-NAME         PIC X(20).
+        01  FOUND-USERNAME          PIC X(20).
+        01  USERNAME-FOUND          PIC X VALUE 'N'.
+            88 USERNAME-FOUND-YES   VALUE 'Y'.
+        01  PROFILE-COUNT           PIC 99 VALUE 0.
+
+    
+       
+
 
        PROCEDURE DIVISION.
 
@@ -307,28 +317,29 @@
            CLOSE SECRETS-FILE.
 
 
-       LOAD-PROFILES-FROM-FILE.
-           INITIALIZE USER-PROFILES.
+        LOAD-PROFILES-FROM-FILE.
+            INITIALIZE USER-PROFILES.
+            MOVE 0 TO PROFILE-COUNT.  *> Add this line
 
-           OPEN INPUT PROFILES-FILE.
-           IF PRO-STATUS = "35"
-               OPEN OUTPUT PROFILES-FILE
-               CLOSE PROFILES-FILE
-               OPEN INPUT PROFILES-FILE
-               MOVE "00" TO PRO-STATUS
-           END-IF
+            OPEN INPUT PROFILES-FILE.
+            IF PRO-STATUS = "35"
+                OPEN OUTPUT PROFILES-FILE
+                CLOSE PROFILES-FILE
+                OPEN INPUT PROFILES-FILE
+                MOVE "00" TO PRO-STATUS
+            END-IF
 
-           PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
-               READ PROFILES-FILE
-                   AT END EXIT PERFORM
-                   NOT AT END
-                       MOVE PROFILES-RECORD TO USER-PROFILES-TABLE(I)
-               END-READ
-           END-PERFORM
-           CLOSE PROFILES-FILE.
+            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+                READ PROFILES-FILE
+                    AT END EXIT PERFORM
+                    NOT AT END
+                        ADD 1 TO PROFILE-COUNT  *> Add this line
+                        MOVE PROFILES-RECORD TO USER-PROFILES-TABLE(I)
+                END-READ
+            END-PERFORM
+            CLOSE PROFILES-FILE.
 
-
-       LOAD-CONNECTIONS-FROM-FILE.
+        LOAD-CONNECTIONS-FROM-FILE.
            INITIALIZE CONNECTIONS-DATA.
            OPEN INPUT CONNECTIONS-FILE.
 
@@ -336,7 +347,7 @@
                OPEN OUTPUT CONNECTIONS-FILE
                CLOSE CONNECTIONS-FILE
                OPEN INPUT CONNECTIONS-FILE
-           END-iF
+           END-IF
 
            SET NOT-END-OF-FILE TO TRUE.
 
@@ -346,13 +357,13 @@
                        SET END-OF-FILE TO TRUE
                    NOT AT END
                        ADD 1 TO CONNECTION-COUNT
-                       MOVE SENDER-USERNAME TO WS-CONN-SENDER(CONNECTION-COUNT)
-                       MOVE RECEIVER-USERNAME TO WS-CONN-RECEIVER(CONNECTION-COUNT)
-                       MOVE CONN-STATUS TO WS-CONN-STATUS(CONNECTION-COUNT)
+                       MOVE SENDER-USERNAME TO CON-SENDER(CONNECTION-COUNT)
+                       MOVE RECEIVER-USERNAME TO CON-RECEIVER(CONNECTION-COUNT)
                END-READ
            END-PERFORM
 
            CLOSE CONNECTIONS-FILE.
+
 
 
        LOAD-NETWORKS-FROM-FILE.
@@ -425,20 +436,22 @@
         LOAD-MESSAGES-FROM-FILE.
            OPEN INPUT MESSAGES-FILE
            IF MESSAGES-FILE-STATUS = "00"
-           SET MESSAGE-COUNT TO 0
-           PERFORM UNTIL MESSAGES-FILE-STATUS NOT = "00"
-           READ MESSAGES-FILE
-               AT END
-                   EXIT PERFORM
-               NOT AT END
-                   ADD 1 TO MESSAGE-COUNT
-                   MOVE MSG-SENDER TO WS-MSG-SENDER(MESSAGE-COUNT)
-                   MOVE MSG-RECIPIENT TO WS-MSG-RECIPIENT(MESSAGE-COUNT)
-                   MOVE MSG-CONTENT TO WS-MSG-CONTENT(MESSAGE-COUNT)
-                   MOVE MSG-TIMESTAMP TO WS-MSG-TIMESTAMP(MESSAGE-COUNT)
-           END-PERFORM
-           CLOSE MESSAGES-FILE
-       END-IF.
+               SET MESSAGE-COUNT TO 0
+               PERFORM UNTIL MESSAGES-FILE-STATUS NOT = "00"
+                   READ MESSAGES-FILE
+                       AT END
+                           EXIT PERFORM
+                       NOT AT END
+                           ADD 1 TO MESSAGE-COUNT
+                           MOVE MSG-SENDER TO WS-MSG-SENDER(MESSAGE-COUNT)
+                           MOVE MSG-RECIPIENT TO WS-MSG-RECIPIENT(MESSAGE-COUNT)
+                           MOVE MSG-CONTENT TO WS-MSG-CONTENT(MESSAGE-COUNT)
+                           MOVE MSG-TIMESTAMP TO WS-MSG-TIMESTAMP(MESSAGE-COUNT)
+               END-PERFORM
+               CLOSE MESSAGES-FILE
+           ELSE
+               SET MESSAGE-COUNT TO 0
+           END-IF.
 
        SAVE-USERS-TO-FILE.
            OPEN OUTPUT SECRETS-FILE.
@@ -773,8 +786,7 @@
                    MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
                    EVALUATE FUNCTION TRIM(INPUT-CHOICE-BUF)
                        WHEN "1"
-                           MOVE "Send Messages is under construction." TO TO-OUTPUT-BUF
-                           PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           PERFORM SEND-MESSAGE-PROCEDURE
                        WHEN "2"
                            MOVE "View My Messages is under construction." TO TO-OUTPUT-BUF
                            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -787,8 +799,16 @@
                END-IF
            END-PERFORM.
 
-       SEND-MESSAGE-PROCEDURE.
-           MOVE "Enter recipient's username (must be a connection):" TO TO-OUTPUT-BUF
+        PARSE-FULL-NAME.
+           MOVE SPACES TO INPUT-FIRST-NAME
+           MOVE SPACES TO INPUT-LAST-NAME
+           
+           UNSTRING SEARCH-NAME DELIMITED BY " "
+               INTO INPUT-FIRST-NAME INPUT-LAST-NAME
+           END-UNSTRING.
+
+        SEND-MESSAGE-PROCEDURE.
+           MOVE "Enter the full name of the person you are looking for:" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
            
            PERFORM READ-INPUT-SAFELY
@@ -796,7 +816,10 @@
            IF EXIT-PROGRAM
                PERFORM EXIT-EARLY
            ELSE
-               MOVE FUNCTION TRIM(INPUT-RECORD) TO RECIPIENT-USERNAME
+               *> Parse the full name into first and last name
+               MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
+               PERFORM PARSE-FULL-NAME
+               
                PERFORM VALIDATE-RECIPIENT-CONNECTION
                    
                IF CONNECTION-VALID-FLAG = 'Y'
@@ -810,11 +833,10 @@
                        PERFORM EXIT-EARLY
                    ELSE
                        MOVE FUNCTION TRIM(INPUT-RECORD) TO MESSAGE-CONTENT
-   
                        PERFORM SAVE-MESSAGE-TO-FILE
                        MOVE "Message sent to " TO TO-OUTPUT-BUF
                        STRING TO-OUTPUT-BUF DELIMITED BY SIZE
-                              FUNCTION TRIM(RECIPIENT-USERNAME) 
+                              FUNCTION TRIM(SEARCH-NAME) 
                                   DELIMITED BY SIZE
                               " successfully!" DELIMITED BY SIZE
                               INTO TO-OUTPUT-BUF
@@ -830,7 +852,7 @@
                END-IF
            END-IF.
 
-
+       
        POST-JOB-PROCEDURE.
            MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
@@ -1112,7 +1134,7 @@
            SUBTRACT 1 FROM CONNECTION-COUNT.
 
 
-       ESTABLISHED-NETWORK-PROCEDURE.
+        ESTABLISHED-NETWORK-PROCEDURE.
            OPEN EXTEND NETWORKS-FILE.
 
            IF NET-FILE-STATUS = "35"
@@ -1121,7 +1143,7 @@
            END-IF.
 
            MOVE CON-SENDER(I) TO NETWORKS-SENDER.
-           MOVE CON-RECEIVER(I) TO NETWORKS-RECIEVER.
+           MOVE CON-RECEIVER(I) TO NETWORKS-RECEIVER.
            WRITE NETWORKS-RECORD.
            CLOSE NETWORKS-FILE.
 
@@ -1804,6 +1826,58 @@
            INTO TO-OUTPUT-BUF
            END-STRING.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
+
+
+
+        FIND-USERNAME-BY-NAME.
+            MOVE 'N' TO USERNAME-FOUND
+            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
+                IF FUNCTION TRIM(USER-FIRST-NAME(I)) = FUNCTION TRIM(INPUT-FIRST-NAME)
+                    AND FUNCTION TRIM(USER-LAST-NAME(I)) = FUNCTION TRIM(INPUT-LAST-NAME)
+                    MOVE USER-USERNAME(I) TO FOUND-USERNAME
+                    MOVE 'Y' TO USERNAME-FOUND
+                    EXIT PERFORM
+                END-IF
+            END-PERFORM.
+
+        VALIDATE-RECIPIENT-CONNECTION.
+           SET CONNECTION-VALID-FLAG TO 'N'
+           
+           *> Load current network data first
+           PERFORM LOAD-NETWORKS-FROM-FILE
+           
+           *> First, find the username for the given name
+           PERFORM FIND-USERNAME-BY-NAME
+           
+           IF USERNAME-FOUND = 'Y'
+               *> Check NETWORKS (established connections), not CONNECTIONS (pending)
+               PERFORM VARYING I FROM 1 BY 1 
+                   UNTIL I > NETWORK-COUNT
+                   IF (NETWORK-USER1(I) = CURRENT-USER
+                       AND NETWORK-USER2(I) = FOUND-USERNAME)
+                       OR
+                       (NETWORK-USER2(I) = CURRENT-USER
+                       AND NETWORK-USER1(I) = FOUND-USERNAME)
+                       SET CONNECTION-VALID-FLAG TO 'Y'
+                       MOVE FOUND-USERNAME TO RECIPIENT-USERNAME
+                       EXIT PERFORM
+                   END-IF
+               END-PERFORM
+           END-IF.
+
+       SAVE-MESSAGE-TO-FILE.
+           OPEN EXTEND MESSAGES-FILE
+           IF MESSAGES-FILE-STATUS = "00"
+               MOVE CURRENT-USER TO MSG-SENDER
+               MOVE RECIPIENT-USERNAME TO MSG-RECIPIENT
+               MOVE MESSAGE-CONTENT TO MSG-CONTENT
+               MOVE FUNCTION CURRENT-DATE TO MSG-TIMESTAMP
+               WRITE MESSAGES-RECORD
+               CLOSE MESSAGES-FILE
+           ELSE
+               MOVE "Error saving message." TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF.
 
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY FUNCTION TRIM(TO-OUTPUT-BUF TRAILING).
