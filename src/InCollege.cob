@@ -752,6 +752,40 @@
                END-EVALUATE
            END-PERFORM.
 
+        MESSAGES-MENU-PROCEDURE.
+           SET MESSAGES-MENU-EXIT-FLAG TO 'N'
+           PERFORM UNTIL MESSAGES-MENU-EXIT-FLAG = 'Y'
+               MOVE "--- Messages Menu ---" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "1) Send a New Message" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "2) View My Messages" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "3) Back to Main Menu" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               MOVE "Enter your choice:" TO TO-OUTPUT-BUF
+               PERFORM DISPLAY-AND-WRITE-OUTPUT
+               
+               READ INPUT-FILE
+                   AT END
+                       SET MESSAGES-MENU-EXIT-FLAG TO 'Y'
+                   NOT AT END
+                       MOVE INPUT-RECORD(1:1) TO INPUT-CHOICE-BUF
+                       EVALUATE FUNCTION TRIM(INPUT-CHOICE-BUF)
+                           WHEN "1"
+                               PERFORM SEND-MESSAGE-PROCEDURE
+                           WHEN "2"
+                               MOVE "View My Messages is under construction." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           WHEN "3"
+                               SET MESSAGES-MENU-EXIT-FLAG TO 'Y'
+                           WHEN OTHER
+                               MOVE "Invalid choice." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       END-EVALUATE
+               END-READ
+           END-PERFORM.
+
        POST-JOB-PROCEDURE.
            MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
