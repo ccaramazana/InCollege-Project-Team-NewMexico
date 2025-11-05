@@ -787,6 +787,44 @@
                END-IF
            END-PERFORM.
 
+       SEND-MESSAGE-PROCEDURE.
+           MOVE "Enter recipient's username (must be a connection):" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+           
+           READ INPUT-FILE
+               AT END
+                   MOVE "Error reading input." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+               NOT AT END
+                   MOVE FUNCTION TRIM(INPUT-RECORD) TO RECIPIENT-USERNAME
+                   PERFORM VALIDATE-RECIPIENT-CONNECTION
+                   
+                   IF CONNECTION-VALID-FLAG = 'Y'
+                       MOVE "Enter your message (max 200 chars):" TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       
+                       READ INPUT-FILE
+                           AT END
+                               MOVE "Error reading message content." TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           NOT AT END
+                               MOVE FUNCTION TRIM(INPUT-RECORD) TO MESSAGE-CONTENT
+                               PERFORM SAVE-MESSAGE-TO-FILE
+                               MOVE "Message sent to " TO TO-OUTPUT-BUF
+                               STRING TO-OUTPUT-BUF DELIMITED BY SIZE
+                                      FUNCTION TRIM(RECIPIENT-USERNAME) DELIMITED BY SIZE
+                                      " successfully!" DELIMITED BY SIZE
+                                      INTO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                               MOVE "---------------------" TO TO-OUTPUT-BUF
+                               PERFORM DISPLAY-AND-WRITE-OUTPUT
+                       END-READ
+                   ELSE
+                       MOVE "You can only message users you are connected with." TO TO-OUTPUT-BUF
+                       PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   END-IF
+           END-READ.
+
        POST-JOB-PROCEDURE.
            MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
