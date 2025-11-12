@@ -27,7 +27,7 @@
                ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS APP-FILE-STATUS.
            SELECT MESSAGES-FILE ASSIGN TO "messages.txt"
-               ORGANIZATION IS SEQUENTIAL
+               ORGANIZATION IS LINE SEQUENTIAL
                FILE STATUS IS MESSAGES-FILE-STATUS.
 
        DATA DIVISION.
@@ -63,7 +63,6 @@
        01  CONNECTIONS-RECORD.
            05 SENDER-USERNAME PIC X(20).
            05 RECEIVER-USERNAME PIC X(20).
-           05 CONN-STATUS PIC X(20).
 
        FD  NETWORKS-FILE.
        01  NETWORKS-RECORD.
@@ -91,8 +90,7 @@
            05 MSG-SENDER           PIC X(20).
            05 MSG-RECIPIENT        PIC X(20).
            05 MSG-CONTENT          PIC X(200).
-           05 MSG-TIMESTAMP        PIC X(19).
-        
+           05 MSG-TIMESTAMP        PIC X(25).
 
        WORKING-STORAGE SECTION.
 
@@ -218,6 +216,9 @@
 
        01  FULL-NAME              PIC X(50).
        01  SEARCH-NAME            PIC X(50).
+
+       01  SEARCH-USERNAME PIC X(20).
+
        01  PROFILE-INDEX          PIC 9(3) VALUE 0.
 
        01  PROFILE-HEADING    PIC X(30).
@@ -239,15 +240,35 @@
        01  WS-JOB-CHOICE       PIC 99.
 
        01  MESSAGES-FILE-STATUS    PIC XX VALUE SPACES.
+
        01  WS-MESSAGES-DATA.
+
+           05 WS-MESSAGE-COUNT           PIC 99 VALUE 0.
            05 WS-MESSAGES-TABLE OCCURS 50 TIMES.
                10 WS-MSG-SENDER           PIC X(20).
                10 WS-MSG-RECIPIENT        PIC X(20).
                10 WS-MSG-CONTENT          PIC X(200).
-               10 WS-MSG-TIMESTAMP        PIC X(19).
-       01  MESSAGE-COUNT           PIC 99 VALUE 0.
+               10 WS-MSG-TIMESTAMP        PIC X(25).
+
+       01  WS-TIMESTAMP-PARSER.
+
+           05 WS-PARSE-TIMESTAMP-DATA PIC X(21).
+
+           05 WS-PARSE-FIELDS REDEFINES WS-PARSE-TIMESTAMP-DATA.
+               10 WS-PARSE-YEAR    PIC 9(4).
+               10 WS-PARSE-MONTH   PIC 9(2).
+               10 WS-PARSE-DAY     PIC 9(2).
+               10 WS-PARSE-HOUR    PIC 9(2).
+               10 WS-PARSE-MINUTE  PIC 9(2).
+               10 WS-PARSE-SECOND  PIC 9(2).
+               10 WS-PARSE-REST    PIC X(7).
+
+       01  WS-FORMATTED-TIMESTAMP PIC X(25).
        01  RECIPIENT-USERNAME      PIC X(20).
        01  MESSAGE-CONTENT         PIC X(200).
+
+       01  MESSAGE-VALID-FLAG      PIC X VALUE 'N'.
+
        01  CONNECTION-VALID-FLAG   PIC X VALUE 'N'.
        01  MESSAGES-MENU-EXIT-FLAG PIC X VALUE 'N'.
 
@@ -258,7 +279,6 @@
            05 WS-CONNECTIONS-TABLE OCCURS 25 TIMES.
                10 WS-CONN-SENDER PIC X(20).
                10 WS-CONN-RECEIVER PIC X(20).
-               10 WS-CONN-STATUS PIC X(20).
 
         01  INPUT-FIRST-NAME        PIC X(20).
         01  INPUT-LAST-NAME         PIC X(20).
@@ -267,8 +287,8 @@
             88 USERNAME-FOUND-YES   VALUE 'Y'.
         01  PROFILE-COUNT           PIC 99 VALUE 0.
 
-    
-       
+
+
 
 
        PROCEDURE DIVISION.
@@ -434,24 +454,25 @@
            CLOSE APPLICATIONS-FILE.
 
         LOAD-MESSAGES-FROM-FILE.
+           INITIALIZE WS-MESSAGES-DATA
            OPEN INPUT MESSAGES-FILE
-           IF MESSAGES-FILE-STATUS = "00"
-               SET MESSAGE-COUNT TO 0
-               PERFORM UNTIL MESSAGES-FILE-STATUS NOT = "00"
-                   READ MESSAGES-FILE
-                       AT END
-                           EXIT PERFORM
-                       NOT AT END
-                           ADD 1 TO MESSAGE-COUNT
-                           MOVE MSG-SENDER TO WS-MSG-SENDER(MESSAGE-COUNT)
-                           MOVE MSG-RECIPIENT TO WS-MSG-RECIPIENT(MESSAGE-COUNT)
-                           MOVE MSG-CONTENT TO WS-MSG-CONTENT(MESSAGE-COUNT)
-                           MOVE MSG-TIMESTAMP TO WS-MSG-TIMESTAMP(MESSAGE-COUNT)
-               END-PERFORM
+           IF MESSAGES-FILE-STATUS = "35"
+               OPEN OUTPUT MESSAGES-FILE
                CLOSE MESSAGES-FILE
-           ELSE
-               SET MESSAGE-COUNT TO 0
+               OPEN INPUT MESSAGES-FILE
+               MOVE "00" TO MESSAGES-FILE-STATUS
            END-IF.
+           SET NOT-END-OF-FILE TO TRUE.
+           PERFORM UNTIL END-OF-FILE
+               READ MESSAGES-FILE
+                   AT END
+                       SET END-OF-FILE to true
+                   NOT AT END
+                       ADD 1 TO WS-MESSAGE-COUNT
+                       MOVE MESSAGES-RECORD TO WS-MESSAGES-TABLE(WS-MESSAGE-COUNT)
+                   END-READ
+               END-PERFORM.
+           CLOSE MESSAGES-FILE.
 
        SAVE-USERS-TO-FILE.
            OPEN OUTPUT SECRETS-FILE.
@@ -765,10 +786,10 @@
            END-PERFORM.
 
         MESSAGES-MENU-PROCEDURE.
-           SET MESSAGES-MENU-EXIT-FLAG TO 'N'
+           MOVE 'N' TO MESSAGES-MENU-EXIT-FLAG
+           MOVE "--- Messages Menu ---" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
            PERFORM UNTIL MESSAGES-MENU-EXIT-FLAG = 'Y' OR EXIT-PROGRAM
-               MOVE "--- Messages Menu ---" TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "1) Send a New Message" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "2) View My Messages" TO TO-OUTPUT-BUF
@@ -777,7 +798,7 @@
                PERFORM DISPLAY-AND-WRITE-OUTPUT
                MOVE "Enter your choice:" TO TO-OUTPUT-BUF
                PERFORM DISPLAY-AND-WRITE-OUTPUT
-               
+
                PERFORM READ-INPUT-SAFELY
 
                IF EXIT-PROGRAM
@@ -788,10 +809,9 @@
                        WHEN "1"
                            PERFORM SEND-MESSAGE-PROCEDURE
                        WHEN "2"
-                           MOVE "View My Messages is under construction." TO TO-OUTPUT-BUF
-                           PERFORM DISPLAY-AND-WRITE-OUTPUT
+                           PERFORM VIEW-MESSAGE-PROCEDURE
                        WHEN "3"
-                           SET MESSAGES-MENU-EXIT-FLAG TO 'Y'
+                           MOVE 'Y' TO MESSAGES-MENU-EXIT-FLAG
                        WHEN OTHER
                            MOVE "Invalid choice." TO TO-OUTPUT-BUF
                            PERFORM DISPLAY-AND-WRITE-OUTPUT
@@ -799,34 +819,87 @@
                END-IF
            END-PERFORM.
 
-        PARSE-FULL-NAME.
-           MOVE SPACES TO INPUT-FIRST-NAME
-           MOVE SPACES TO INPUT-LAST-NAME
-           
-           UNSTRING SEARCH-NAME DELIMITED BY " "
-               INTO INPUT-FIRST-NAME INPUT-LAST-NAME
-           END-UNSTRING.
+       VIEW-MESSAGE-PROCEDURE.
+           PERFORM LOAD-MESSAGES-FROM-FILE
+           MOVE 'N' TO MESSAGE-VALID-FLAG
 
-        SEND-MESSAGE-PROCEDURE.
-           MOVE "Enter the full name of the person you are looking for:" TO TO-OUTPUT-BUF
+           MOVE "--- Your Messages ---" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
-           
-           PERFORM READ-INPUT-SAFELY
-           
-           IF EXIT-PROGRAM
-               PERFORM EXIT-EARLY
-           ELSE
-               *> Parse the full name into first and last name
-               MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-NAME
-               PERFORM PARSE-FULL-NAME
-               
-               PERFORM VALIDATE-RECIPIENT-CONNECTION
-                   
-               IF CONNECTION-VALID-FLAG = 'Y'
-                   MOVE "Enter your message (max 200 chars):" 
-                       TO TO-OUTPUT-BUF
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > WS-MESSAGE-COUNT
+               IF (FUNCTION TRIM(WS-MSG-RECIPIENT(I)) = CURRENT-USER)
+                   MOVE 'Y' TO MESSAGE-VALID-FLAG
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING
+                       "From: " DELIMITED BY SIZE
+                       FUNCTION TRIM(WS-MSG-SENDER(I)) DELIMITED BY SIZE
+                       INTO TO-OUTPUT-BUF
+                   END-STRING
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
-                       
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING
+                       "Message: " DELIMITED BY SIZE
+                       FUNCTION TRIM(WS-MSG-CONTENT(I)) DELIMITED BY SIZE
+                       INTO TO-OUTPUT-BUF
+                   END-STRING
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE WS-MSG-TIMESTAMP(I)(1:21) TO WS-PARSE-TIMESTAMP-DATA
+
+                   MOVE SPACES TO WS-FORMATTED-TIMESTAMP
+                   STRING
+                       WS-PARSE-MONTH  DELIMITED BY SIZE
+                       "/"             DELIMITED BY SIZE
+                       WS-PARSE-DAY    DELIMITED BY SIZE
+                       "/"             DELIMITED BY SIZE
+                       WS-PARSE-YEAR   DELIMITED BY SIZE
+                       " "             DELIMITED BY SIZE
+                       WS-PARSE-HOUR   DELIMITED BY SIZE
+                       ":"             DELIMITED BY SIZE
+                       WS-PARSE-MINUTE DELIMITED BY SIZE
+                       INTO WS-FORMATTED-TIMESTAMP
+                   END-STRING
+
+                   MOVE SPACES TO TO-OUTPUT-BUF
+                   STRING
+                       "Sent: " DELIMITED BY SIZE
+                       FUNCTION TRIM(WS-FORMATTED-TIMESTAMP) DELIMITED BY SIZE
+                       INTO TO-OUTPUT-BUF
+                   END-STRING
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+                   MOVE "--------------------" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                END-IF
+           END-PERFORM.
+
+           IF (MESSAGE-VALID-FLAG = 'N')
+                   MOVE "You have no messages at this time." TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+                   MOVE "---------------------" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+           END-IF.
+
+       SEND-MESSAGE-PROCEDURE.
+           MOVE "Enter the username of the person you are looking for:" TO TO-OUTPUT-BUF
+           PERFORM DISPLAY-AND-WRITE-OUTPUT
+
+           PERFORM READ-INPUT-SAFELY
+
+           IF EXIT-PROGRAM
+              PERFORM EXIT-EARLY
+           ELSE
+              *> Parse the full name into first and last name
+               MOVE FUNCTION TRIM(INPUT-RECORD) TO SEARCH-USERNAME
+
+               PERFORM VALIDATE-RECIPIENT-CONNECTION
+
+               IF CONNECTION-VALID-FLAG = 'Y'
+                   MOVE "Enter your message (max 200 chars):" TO TO-OUTPUT-BUF
+                   PERFORM DISPLAY-AND-WRITE-OUTPUT
+
                    PERFORM READ-INPUT-SAFELY
 
                    IF EXIT-PROGRAM
@@ -834,25 +907,51 @@
                    ELSE
                        MOVE FUNCTION TRIM(INPUT-RECORD) TO MESSAGE-CONTENT
                        PERFORM SAVE-MESSAGE-TO-FILE
-                       MOVE "Message sent to " TO TO-OUTPUT-BUF
-                       STRING TO-OUTPUT-BUF DELIMITED BY SIZE
-                              FUNCTION TRIM(SEARCH-NAME) 
-                                  DELIMITED BY SIZE
-                              " successfully!" DELIMITED BY SIZE
-                              INTO TO-OUTPUT-BUF
-                       PERFORM DISPLAY-AND-WRITE-OUTPUT
-                           
-                       MOVE "---------------------" TO TO-OUTPUT-BUF
+                       MOVE SPACES TO TO-OUTPUT-BUF
+                       STRING
+                           "Message sent to " DELIMITED BY SIZE
+                           FUNCTION TRIM(SEARCH-USERNAME) DELIMITED BY SIZE
+                           " successfully!" DELIMITED BY SIZE
+                           INTO TO-OUTPUT-BUF
+                       END-STRING
                        PERFORM DISPLAY-AND-WRITE-OUTPUT
                    END-IF
                ELSE
-                   MOVE "You can only message users you are connected with."
-                       TO TO-OUTPUT-BUF
+                   MOVE "You can only message users you are connected with." TO TO-OUTPUT-BUF
                    PERFORM DISPLAY-AND-WRITE-OUTPUT
                END-IF
            END-IF.
 
-       
+       VALIDATE-RECIPIENT-CONNECTION.
+           MOVE 'N' TO CONNECTION-VALID-FLAG
+
+           *> Load current network data first
+           PERFORM LOAD-NETWORKS-FROM-FILE
+
+           PERFORM VARYING I FROM 1 BY 1 UNTIL I > NETWORK-COUNT
+              IF (FUNCTION TRIM(NETWORK-USER1(I)) = CURRENT-USER) AND (FUNCTION TRIM(NETWORK-USER2(I)) = SEARCH-USERNAME)
+                  OR
+                  (FUNCTION TRIM(NETWORK-USER2(I)) = CURRENT-USER) AND (FUNCTION TRIM(NETWORK-USER1(I)) = SEARCH-USERNAME)
+                  MOVE 'Y' TO CONNECTION-VALID-FLAG
+                  MOVE SEARCH-USERNAME TO RECIPIENT-USERNAME
+                  EXIT PERFORM
+              END-IF
+           END-PERFORM.
+
+       SAVE-MESSAGE-TO-FILE.
+           OPEN EXTEND MESSAGES-FILE.
+           MOVE CURRENT-USER TO MSG-SENDER.
+           MOVE RECIPIENT-USERNAME TO MSG-RECIPIENT.
+           MOVE MESSAGE-CONTENT TO MSG-CONTENT.
+           MOVE FUNCTION CURRENT-DATE TO MSG-TIMESTAMP.
+           WRITE MESSAGES-RECORD.
+           CLOSE MESSAGES-FILE.
+
+           ADD 1 TO WS-MESSAGE-COUNT
+           MOVE CURRENT-USER TO WS-MSG-SENDER(WS-MESSAGE-COUNT).
+           MOVE RECIPIENT-USERNAME TO WS-MSG-RECIPIENT(WS-MESSAGE-COUNT).
+           MOVE MESSAGE-CONTENT TO WS-MSG-CONTENT(WS-MESSAGE-COUNT).
+           MOVE MSG-TIMESTAMP TO WS-MSG-TIMESTAMP(WS-MESSAGE-COUNT).
        POST-JOB-PROCEDURE.
            MOVE "--- Post a New Job/Internship ---" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
@@ -1019,11 +1118,9 @@
 
        SEND-CONNECTION-REQUEST.
 
-
            PERFORM LOAD-NETWORKS-FROM-FILE.
            MOVE "N" TO REQUEST-SUCCESS.
            MOVE "N" TO CONNECTION-EXIST-FLAG.
-
 
            PERFORM VARYING I FROM 1 BY 1 UNTIL I > CONNECTION-COUNT
                IF FUNCTION TRIM(CON-SENDER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
@@ -1060,24 +1157,19 @@
                END-PERFORM
            END-IF
 
-
            IF CONNECTION-EXIST-FLAG = "N"
                ADD 1 TO CONNECTION-COUNT
-               MOVE USER-USERNAME(LOGGED-IN-RANK) TO CON-SENDER(CONNECTION-COUNT)
-               MOVE USER-USERNAME(PROFILE-INDEX) TO CON-RECEIVER(CONNECTION-COUNT)
+               MOVE FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK)) TO CON-SENDER(CONNECTION-COUNT)
+               MOVE FUNCTION TRIM(USER-USERNAME(PROFILE-INDEX)) TO CON-RECEIVER(CONNECTION-COUNT)
                PERFORM SAVE-CONNECTIONS-TO-FILE
                MOVE "Y" TO REQUEST-SUCCESS
            END-IF.
-
-
 
        PENDING-REQUESTS-PROCEDURE.
            MOVE "----- Pending Connection Requests: -----" TO TO-OUTPUT-BUF
            PERFORM DISPLAY-AND-WRITE-OUTPUT
 
-
            MOVE "N" TO CONNECTION-EXIST-FLAG
-
 
            PERFORM VARYING I FROM CONNECTION-COUNT BY -1 UNTIL I < 1
                IF FUNCTION TRIM(CON-RECEIVER(I)) = FUNCTION TRIM(USER-USERNAME(LOGGED-IN-RANK))
@@ -1134,7 +1226,7 @@
            SUBTRACT 1 FROM CONNECTION-COUNT.
 
 
-        ESTABLISHED-NETWORK-PROCEDURE.
+       ESTABLISHED-NETWORK-PROCEDURE.
            OPEN EXTEND NETWORKS-FILE.
 
            IF NET-FILE-STATUS = "35"
@@ -1475,7 +1567,6 @@
            END-PERFORM.
 
 
-
            PERFORM VARYING EDU-SUBS FROM 1 BY 1 UNTIL EDU-SUBS > 3
 
                IF EDU-DEGREE(LOGGED-IN-RANK, EDU-SUBS) NOT = SPACES
@@ -1612,8 +1703,6 @@
 
                ADD 1 TO COUNT-EDU
                MOVE COUNT-EDU TO J
-
-
 
                 PERFORM WITH TEST AFTER
                        UNTIL FUNCTION LENGTH(FUNCTION TRIM(INPUT-RECORD)) > 0
@@ -1826,58 +1915,6 @@
            INTO TO-OUTPUT-BUF
            END-STRING.
            PERFORM DISPLAY-AND-WRITE-OUTPUT.
-
-
-
-        FIND-USERNAME-BY-NAME.
-            MOVE 'N' TO USERNAME-FOUND
-            PERFORM VARYING I FROM 1 BY 1 UNTIL I > USER-COUNT
-                IF FUNCTION TRIM(USER-FIRST-NAME(I)) = FUNCTION TRIM(INPUT-FIRST-NAME)
-                    AND FUNCTION TRIM(USER-LAST-NAME(I)) = FUNCTION TRIM(INPUT-LAST-NAME)
-                    MOVE USER-USERNAME(I) TO FOUND-USERNAME
-                    MOVE 'Y' TO USERNAME-FOUND
-                    EXIT PERFORM
-                END-IF
-            END-PERFORM.
-
-        VALIDATE-RECIPIENT-CONNECTION.
-           SET CONNECTION-VALID-FLAG TO 'N'
-           
-           *> Load current network data first
-           PERFORM LOAD-NETWORKS-FROM-FILE
-           
-           *> First, find the username for the given name
-           PERFORM FIND-USERNAME-BY-NAME
-           
-           IF USERNAME-FOUND = 'Y'
-               *> Check NETWORKS (established connections), not CONNECTIONS (pending)
-               PERFORM VARYING I FROM 1 BY 1 
-                   UNTIL I > NETWORK-COUNT
-                   IF (NETWORK-USER1(I) = CURRENT-USER
-                       AND NETWORK-USER2(I) = FOUND-USERNAME)
-                       OR
-                       (NETWORK-USER2(I) = CURRENT-USER
-                       AND NETWORK-USER1(I) = FOUND-USERNAME)
-                       SET CONNECTION-VALID-FLAG TO 'Y'
-                       MOVE FOUND-USERNAME TO RECIPIENT-USERNAME
-                       EXIT PERFORM
-                   END-IF
-               END-PERFORM
-           END-IF.
-
-       SAVE-MESSAGE-TO-FILE.
-           OPEN EXTEND MESSAGES-FILE
-           IF MESSAGES-FILE-STATUS = "00"
-               MOVE CURRENT-USER TO MSG-SENDER
-               MOVE RECIPIENT-USERNAME TO MSG-RECIPIENT
-               MOVE MESSAGE-CONTENT TO MSG-CONTENT
-               MOVE FUNCTION CURRENT-DATE TO MSG-TIMESTAMP
-               WRITE MESSAGES-RECORD
-               CLOSE MESSAGES-FILE
-           ELSE
-               MOVE "Error saving message." TO TO-OUTPUT-BUF
-               PERFORM DISPLAY-AND-WRITE-OUTPUT
-           END-IF.
 
        DISPLAY-AND-WRITE-OUTPUT.
            DISPLAY FUNCTION TRIM(TO-OUTPUT-BUF TRAILING).
